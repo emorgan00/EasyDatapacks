@@ -135,6 +135,16 @@ class Function:
 			else: # something else, NOT FINISHED
 				pass
 
+		# special case: assigning as a summon
+		if ref[:7] == 'summon ':
+			if 'Tags=[' in ref:
+				this.commands.append(ref.replace('Tags=[', ',Tags=["assign",'))
+			elif '}' in ref:
+				this.commands.append(ref.replace('}', ',Tags=["assign"]}'))
+			else:
+				this.commands.append(ref+' {Tags=["assign"]}')
+			return select_entity('assign')
+
 		# a simple constant
 		return expression
 
@@ -173,6 +183,9 @@ class Function:
 			if expression[0] == '@': # an entity
 				this.refs[dest] = 'e'
 				this.commands.append(assign_entity(expression, dest))
+				# special case: assigning as a summon
+				if expression == select_entity('assign'):
+					this.commands.append(clear_tag('assign'))
 			else: # something else, NOT FINISHED 
 				pass
 

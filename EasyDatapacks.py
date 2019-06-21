@@ -65,4 +65,5 @@ def compile(packname, files, verbose):
 		with open(os.path.join(packname, 'data', packname, 'functions', func+'.mcfunction'), 'w') as f:
 			f.write('\n'.join(namespace.functions[func].commands))
 
-compile('mydatapack', ['test.mcf'], True)
+# compile('mydatapack', ['test.mcf'], True)
+Namespace('mydatapack', ['test.mcf']).compile(True)
