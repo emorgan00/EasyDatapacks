@@ -20,3 +20,11 @@ def tokenize(line):
 
 def broad_tokenize(line):
 	return line.split(' ')
+
+def tab_depth(line):
+	c = 0
+	for ch in line:
+		if ch == '\t': c += 1
+		else:
+			break
+	return c
