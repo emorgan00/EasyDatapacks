@@ -9,7 +9,7 @@ class Function:
 		this.body = ''
 
 	def __str__(this):
-		return this.header+':\n\tparams: '+str(this.params)+'\n\n\t'+this.body.replace('\n', '\n\t')
+		return this.header+': '+str(this.params)+'\n\n\t'+this.body.replace('\n', '\n\t')
 
 	def create_instance(this, params):
 		pass
@@ -40,10 +40,10 @@ def create_function(pack, name, params, refs, body, functions):
 		# definition
 		elif tokens[0].strip() == 'def':
 			funcname = name+'.'+tokens[1].strip()
-			funcparams = {}
+			funcparams = []
 			for token in tokens[2:]:
-				if all(c.isalnum() or c in '_*' for c in token):
-					funcparams[token.replace('*', '')] = '*' in token
+				if all(c.isalnum() or c in '_' for c in token):
+					funcparams.append(token)
 			funcbody = []
 			while pointer < len(body) and body[pointer][0] in '\t\n':
 				if body[pointer][0] == '\t':
@@ -59,8 +59,7 @@ def create_function(pack, name, params, refs, body, functions):
 			# handle params
 			funcparams = broad_tokenize(''.join(tokens[1:]))
 			for i, p in enumerate(func.params):
-				if func.params[p]:
-					evaluate_expression(func.header+'.'+p, [funcparams[i]])
+				evaluate_expression(func.header+'.'+p, [funcparams[i]])
 			cmds.append('function '+pack+':'+func.header)
 
 		# vanilla command
@@ -107,8 +106,7 @@ def create_function(pack, name, params, refs, body, functions):
 
 	# handle params
 	for p in params:
-		if params[p]:
-			refs[name+'.'+p] = None
+		refs[name+'.'+p] = None
 
 	# generate body
 	while pointer < len(body):
@@ -119,8 +117,7 @@ def create_function(pack, name, params, refs, body, functions):
 
 	# clean params
 	for p in params:
-		if params[p]:
-			cmds.append(clear_tag(name+'.'+p))
+		cmds.append(clear_tag(name+'.'+p))
 
 	f = Function(name, params)
 	f.body = '\n'.join(cmds)
