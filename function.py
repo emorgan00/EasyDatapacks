@@ -14,7 +14,7 @@ class Function:
 	def create_instance(this, params):
 		pass
 
-def create_function(name, params, refs, body, functions):
+def create_function(pack, name, params, refs, body, functions):
 	pointer = 0
 	'''create a new function with a leading path, any number of parameters, a global reference dictionary, and a body'''
 
@@ -24,7 +24,7 @@ def create_function(name, params, refs, body, functions):
 	def evaluate_command(tokens, pointer):
 
 		# assignment
-		if tokens[1].strip() == '=':
+		if len(tokens) > 1 and tokens[1].strip() == '=':
 			token = name+'_'+tokens[0].strip()
 			refs[token] = evaluate_expression(token, tokens[2:])
 
@@ -33,13 +33,13 @@ def create_function(name, params, refs, body, functions):
 			funcname = name+'_'+tokens[1].strip()
 			funcparams = {}
 			for token in tokens[2:]:
-				if token not in '():,':
+				if all(c.isalnum() or c in '_*' for c in token):
 					funcparams[token.replace('*', '')] = '*' in token
 			funcbody = []
 			while pointer < len(body) and body[pointer][0] == '\t':
 				funcbody.append(body[pointer])
 				pointer += 1
-			functions[funcname] = create_function(funcname, funcparams, refs, funcbody, functions)
+			functions[funcname] = create_function(pack, funcname, funcparams, refs, funcbody, functions)
 
 		# vanilla command
 		else:
