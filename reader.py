@@ -17,3 +17,6 @@ def tokenize(line):
 	if len(buff) > 0:
 		tokens.append(buff)
 	return tokens
+
+def broad_tokenize(line):
+	return line.split(' ')

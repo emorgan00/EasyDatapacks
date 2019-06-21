@@ -30,7 +30,7 @@ def compile(path_in, packname):
 		name = path.split('/')[-1].split('.')[0]
 		lines = f_in.readlines()
 
-		create_function(name, name, {}, {}, lines, functions)
+		create_function(packname, name, {}, {}, lines, functions)
 		f_in.close()
 
 	for f in functions:

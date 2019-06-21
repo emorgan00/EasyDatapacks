@@ -21,30 +21,52 @@ def create_function(pack, name, params, refs, body, functions):
 	cmds = []
 	refs = refs.copy()
 
+	def get_function(funcname):
+
+		paths = name.split('.')
+		for i in xrange(1, len(paths)+1):
+			funcpath = '.'.join(paths[:i])+'.'+funcname
+			if funcpath in functions:
+				return functions[funcpath]
+		return None
+
 	def evaluate_command(tokens, pointer):
 
 		# assignment
 		if len(tokens) > 1 and tokens[1].strip() == '=':
-			token = name+'_'+tokens[0].strip()
+			token = name+'.'+tokens[0].strip()
 			refs[token] = evaluate_expression(token, tokens[2:])
 
 		# definition
 		elif tokens[0].strip() == 'def':
-			funcname = name+'_'+tokens[1].strip()
+			funcname = name+'.'+tokens[1].strip()
 			funcparams = {}
 			for token in tokens[2:]:
 				if all(c.isalnum() or c in '_*' for c in token):
 					funcparams[token.replace('*', '')] = '*' in token
 			funcbody = []
-			while pointer < len(body) and body[pointer][0] == '\t':
-				funcbody.append(body[pointer])
+			while pointer < len(body) and body[pointer][0] in '\t\n':
+				if body[pointer][0] == '\t':
+					funcbody.append(body[pointer][1:])
+				else:
+					funcbody.append(body[pointer])
 				pointer += 1
 			functions[funcname] = create_function(pack, funcname, funcparams, refs, funcbody, functions)
+
+		# custom function call
+		elif get_function(tokens[0].strip()) != None:
+			func = get_function(tokens[0].strip())
+			# handle params
+			funcparams = broad_tokenize(''.join(tokens[1:]))
+			for i, p in enumerate(func.params):
+				if func.params[p]:
+					evaluate_expression(func.header+'.'+p, [funcparams[i]])
+			cmds.append('function '+pack+':'+func.header)
 
 		# vanilla command
 		else:
 			for i in xrange(len(tokens)):
-				token = name+'_'+tokens[i].strip()
+				token = name+'.'+tokens[i].strip()
 				if token in refs:
 					if refs[token] == None:
 						tokens[i] = select_entity(token)+(' ' if tokens[i][-1] == ' ' else '')
@@ -61,7 +83,7 @@ def create_function(pack, name, params, refs, body, functions):
 			cmds.append(clear_tag(destination))
 
 		if len(tokens) == 1:
-			token = name+'_'+tokens[0].strip()
+			token = name+'.'+tokens[0].strip()
 			# entity
 			if tokens[0][0] == '@':
 				cmds.append('tag %s add %s' % (tokens[0], destination))
@@ -86,14 +108,19 @@ def create_function(pack, name, params, refs, body, functions):
 	# handle params
 	for p in params:
 		if params[p]:
-			refs[name+'_'+p] = None
+			refs[name+'.'+p] = None
 
 	# generate body
 	while pointer < len(body):
 		line = body[pointer].strip()
 		pointer += 1
-		if len(line) == 0: continue
+		if len(line.strip()) == 0: continue
 		pointer = evaluate_command(tokenize(line), pointer)
+
+	# clean params
+	for p in params:
+		if params[p]:
+			cmds.append(clear_tag(name+'.'+p))
 
 	f = Function(name, params)
 	f.body = '\n'.join(cmds)
