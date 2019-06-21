@@ -43,6 +43,7 @@ class Function:
 		this.locals = []
 		this.expecteddepth = expecteddepth
 		this.relcounter = 0
+		this.pastline = ''
 
 	def __str__(this):
 		return this.name+': '+str(this.params)+'\n\n\t'+'\n\t'.join(this.commands)+'\n'
@@ -220,6 +221,16 @@ class Function:
 			# setup execution call
 			this.commands.append('execute '+''.join(this.process_expression(token) for token in tokens)+' run function '+this.pack+':'+'.'.join(funcname))
 
+		# else
+		elif tokens[0].strip() == 'else':
+			if this.pastline[:3] != 'if ':
+				raise Exception('"else" without matching "if" at '+this.name)
+			this.lines[this.pointer] = (this.lines[this.pointer][0], 'unless'+this.pastline[2:])
+			this.process_line()
+			return
+
 		# vanilla command
 		else:
 			this.commands.append(''.join(this.process_expression(token) for token in tokens))
+
+		this.pastline = line
