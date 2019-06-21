@@ -21,7 +21,10 @@ def compile(packname, files, verbose):
 	packname points to the folder where you want your datapack to end up'''
 
 	namespace = Namespace(packname, files)
-	namespace.compile(verbose)
+	try:
+		namespace.compile(verbose)
+	except Exception as e:
+		print '(error) '+e.args[0]
 
 	# generate the file layout
 	try:
@@ -39,7 +42,7 @@ def compile(packname, files, verbose):
 	with open(os.path.join(packname, 'data', 'minecraft', 'tags', 'functions', 'load.json'), 'w') as f:
 		for func in namespace.functions:
 			if len(func) > 4 and func[-5:] == '.load':
-				f.write(LOADTICK % (packname+':'+func))
+				f.write(LOADTICK % ('"'+packname+':'+func+'"'))
 				break
 		else:
 			f.write(LOADTICK % "")
@@ -48,7 +51,7 @@ def compile(packname, files, verbose):
 	with open(os.path.join(packname, 'data', 'minecraft', 'tags', 'functions', 'tick.json'), 'w') as f:
 		for func in namespace.functions:
 			if len(func) > 4 and func[-5:] == '.tick':
-				f.write(LOADTICK % (packname+':'+func))
+				f.write(LOADTICK % ('"'+packname+':'+func+'"'))
 				break
 		else:
 			f.write(LOADTICK % "")

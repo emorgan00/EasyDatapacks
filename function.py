@@ -20,7 +20,7 @@ class Namespace:
 				# pre-processing
 				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
 
-				Function([name], {}, lines, this, 0).compile()
+				Function([name], {}, lines, this, 0, 0).compile()
 
 		if verbose:
 			for f in this.functions:
@@ -28,7 +28,7 @@ class Namespace:
 
 class Function:
 
-	def __init__(this, path, params, lines, namespace, start):
+	def __init__(this, path, params, lines, namespace, start, expecteddepth):
 
 		this.commands = []
 		this.path = path
@@ -41,6 +41,7 @@ class Function:
 		this.lines = lines
 		this.pointer = start
 		this.locals = []
+		this.expecteddepth = expecteddepth
 
 	def __str__(this):
 		return this.name+': '+str(this.params)+'\n\n\t'+'\n\t'.join(this.commands)+'\n'
@@ -63,7 +64,12 @@ class Function:
 
 	def compile(this):
 
-		depth = this.lines[this.pointer][0]
+		try:
+			depth = this.lines[this.pointer][0]
+		except:
+			raise SyntaxError('Expected content at '+this.name+', nothing found')
+		if depth != this.expecteddepth:
+			raise SyntaxError('Incorrect indentation at '+this.name)
 
 		# pre-process params into local variables
 		for p in this.params:
@@ -81,7 +87,9 @@ class Function:
 				for token in tokens[2:]:
 					if all(c.isalnum() or c in '_' for c in token):
 						funcparams[token] = 'e'
-				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1)
+				if '.'.join(funcpath) in this.functions:
+					raise Exception('Duplicate function "'+funcpath[-1]+'" in '+this.name)
+				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1, depth+1)
 
 		# process lines
 		while this.pointer < len(this.lines):
@@ -103,12 +111,12 @@ class Function:
 
 	def process_expression(this, expression):
 
-		expression = expression.strip()
+		ref = expression.strip()
 
-		path = this.reference_path(expression)
+		path = this.reference_path(ref)
 		if path != None: # some reference
 			if this.refs[path] == 'e': # an entity
-				return select_entity(path)
+				return select_entity(path)+(' ' if expression[-1] == ' ' else '')
 			else: # something else, NOT FINISHED
 				pass
 
@@ -156,7 +164,7 @@ class Function:
 
 			this.functions[this.name+'.'+tokens[1].strip()].compile()
 
-		# calling a function
+		# calling a custom function
 		elif funcpath != None:
 			func = this.functions[funcpath]
 			funcparams = broad_tokenize(''.join(tokens[1:]))
@@ -165,3 +173,7 @@ class Function:
 				if func.params[p] == 'e': # an entity
 					this.commands.append(assign_entity(expression, func.name+'.'+p))
 			this.commands.append('function '+this.pack+':'+func.name)
+
+		# vanilla command
+		else:
+			this.commands.append(''.join(this.process_expression(token) for token in tokens))
