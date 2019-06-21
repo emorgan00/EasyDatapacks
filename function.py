@@ -20,8 +20,7 @@ class Namespace:
 				# pre-processing
 				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
 
-				this.functions[name] = Function([name], {}, lines, this, 0)
-				this.functions[name].compile()
+				Function([name], {}, lines, this, 0).compile()
 
 		if verbose:
 			for f in this.functions:
@@ -106,15 +105,15 @@ class Function:
 
 		expression = expression.strip()
 
-		if expression[0] == '@': # direct reference to entity
-			return expression
-
 		path = this.reference_path(expression)
 		if path != None: # some reference
 			if this.refs[path] == 'e': # an entity
 				return select_entity(path)
 			else: # something else, NOT FINISHED
-				return None
+				pass
+
+		# a simple constant
+		return expression
 
 	def fork_function(this, line):
 

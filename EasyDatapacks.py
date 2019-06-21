@@ -12,7 +12,7 @@ MCMETA = '''{
 
 LOADTICK = '''{
 	"values" : [
-		"%s"
+		%s
 	]
 }'''
 
@@ -38,16 +38,20 @@ def compile(packname, files, verbose):
 	# load
 	with open(os.path.join(packname, 'data', 'minecraft', 'tags', 'functions', 'load.json'), 'w') as f:
 		for func in namespace.functions:
-			if len(func) > 4 and func[-5:] == '_load':
+			if len(func) > 4 and func[-5:] == '.load':
 				f.write(LOADTICK % (packname+':'+func))
 				break
+		else:
+			f.write(LOADTICK % "")
 
 	# tick
 	with open(os.path.join(packname, 'data', 'minecraft', 'tags', 'functions', 'tick.json'), 'w') as f:
 		for func in namespace.functions:
-			if len(func) > 4 and func[-5:] == '_tick':
+			if len(func) > 4 and func[-5:] == '.tick':
 				f.write(LOADTICK % (packname+':'+func))
 				break
+		else:
+			f.write(LOADTICK % "")
 
 	# actual datapack
 	os.mkdir(os.path.join(packname, 'data', packname))
