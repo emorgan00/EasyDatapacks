@@ -186,7 +186,10 @@ class Function:
 			func = this.functions[funcpath]
 			funcparams = broad_tokenize(''.join(tokens[1:]))
 			for i, p in enumerate(func.params):
-				expression = this.process_expression(tokens[i+1])
+				try:
+					expression = this.process_expression(tokens[i+1])
+				except IndexError:
+					raise Exception('Not enough paramaters for function "'+tokens[0]+'" at '+this.name)
 				if func.params[p] == 'e': # an entity
 					this.commands.append(assign_entity(expression, func.name+'.'+p))
 			this.commands.append('function '+this.pack+':'+func.name)
