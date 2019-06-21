@@ -25,11 +25,13 @@ def compile(packname, files, verbose):
 		namespace.compile(verbose)
 	except Exception as e:
 		print '(error) '+e.args[0]
+		return
 
 	# generate the file layout
 	try:
 		shutil.rmtree(packname)
 	except: pass
+
 	os.mkdir(packname)
 	os.mkdir(os.path.join(packname, 'data'))
 	with open(os.path.join(packname, 'pack.mcmeta'), 'w') as f:

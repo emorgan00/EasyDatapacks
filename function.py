@@ -42,6 +42,7 @@ class Function:
 		this.pointer = start
 		this.locals = []
 		this.expecteddepth = expecteddepth
+		this.relcounter = 0
 
 	def __str__(this):
 		return this.name+': '+str(this.params)+'\n\n\t'+'\n\t'.join(this.commands)+'\n'
@@ -137,6 +138,8 @@ class Function:
 		# creating a new assignment
 		if len(tokens) > 1 and tokens[1].strip() == '=':
 
+			if len(tokens) == 2:
+				raise Exception('Expected something after "=" at '+this.name)
 			dest = this.reference_path(tokens[0].strip())
 
 			# assigning something for the first time
@@ -173,6 +176,19 @@ class Function:
 				if func.params[p] == 'e': # an entity
 					this.commands.append(assign_entity(expression, func.name+'.'+p))
 			this.commands.append('function '+this.pack+':'+func.name)
+
+		# implicit execute
+		elif tokens[0].strip() in ('as', 'at', 'positioned', 'align', 'facing', 'rotated', 'in', 'anchored', 'if', 'unless', 'store'):
+			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
+
+			# generate inner content as function
+			funcname = this.path+['rel'+str(this.relcounter)]
+			this.functions['.'.join(funcname)] = Function(funcname, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
+			this.functions['.'.join(funcname)].compile()
+			this.relcounter += 1
+
+			# setup execution call
+			this.commands.append('execute '+''.join(this.process_expression(token) for token in tokens)+' run function '+this.pack+':'+'.'.join(funcname))
 
 		# vanilla command
 		else:
