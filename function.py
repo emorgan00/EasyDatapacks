@@ -9,18 +9,19 @@ class Function:
 		this.body = ''
 
 	def __str__(this):
-		return this.header+':\n\tparams: '+str(this.params)+'\n\n'+this.body
+		return this.header+':\n\tparams: '+str(this.params)+'\n\n\t'+this.body.replace('\n', '\n\t')
 
 	def create_instance(this, params):
 		pass
 
-def create_function(name, params, refs, body):
+def create_function(name, params, refs, body, functions):
+	pointer = 0
 	'''create a new function with a leading path, any number of parameters, a global reference dictionary, and a body'''
 
 	cmds = []
 	refs = refs.copy()
 
-	def evaluate_command(tokens):
+	def evaluate_command(tokens, pointer):
 
 		# assignment
 		if tokens[1].strip() == '=':
@@ -28,8 +29,17 @@ def create_function(name, params, refs, body):
 			refs[token] = evaluate_expression(token, tokens[2:])
 
 		# definition
-		if tokens[0].strip() == 'def':
-			funcname = tokens[1].strip()
+		elif tokens[0].strip() == 'def':
+			funcname = name+'_'+tokens[1].strip()
+			funcparams = {}
+			for token in tokens[2:]:
+				if token not in '():,':
+					funcparams[token.replace('*', '')] = '*' in token
+			funcbody = []
+			while pointer < len(body) and body[pointer][0] == '\t':
+				funcbody.append(body[pointer])
+				pointer += 1
+			functions[funcname] = create_function(funcname, funcparams, refs, funcbody, functions)
 
 		# vanilla command
 		else:
@@ -42,6 +52,8 @@ def create_function(name, params, refs, body):
 						tokens[i] = refs[token]+(' ' if tokens[i][-1] == ' ' else '')
 
 			cmds.append(''.join(tokens))
+
+		return pointer
 
 	def evaluate_expression(destination, tokens):
 
@@ -77,10 +89,11 @@ def create_function(name, params, refs, body):
 			refs[name+'_'+p] = None
 
 	# generate body
-	for line in body.split('\n'):
-		line = line.strip()
+	while pointer < len(body):
+		line = body[pointer].strip()
+		pointer += 1
 		if len(line) == 0: continue
-		evaluate_command(tokenize(line))
+		pointer = evaluate_command(tokenize(line), pointer)
 
 	f = Function(name, params)
 	f.body = '\n'.join(cmds)

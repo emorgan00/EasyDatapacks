@@ -3,12 +3,17 @@ def tokenize(line):
 	buff = ''
 
 	for ch in line:
-		buff += ch
-		if ch in ' ,{}[]():"\'+-':
-			tokens.append(buff)
+		if ch in ',{}[]():"\'+-':
+			if len(buff) > 0: tokens.append(buff)
+			tokens.append(ch)
 			buff = ''
+		elif ch == ' ':
+			buff += ch
+			if len(buff) > 0: tokens.append(buff)
+			buff = ''
+		else:
+			buff += ch
 
 	if len(buff) > 0:
 		tokens.append(buff)
-	print tokens
 	return tokens
