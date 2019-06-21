@@ -1,4 +1,5 @@
 from entity import *
+from reader import *
 
 class Function:
 
@@ -10,7 +11,7 @@ class Function:
 	def __str__(this):
 		return this.header+':\n\tparams: '+str(this.params)+'\n\n'+this.body
 
-	def create_instance(this):
+	def create_instance(this, params):
 		pass
 
 def create_function(name, params, refs, body):
@@ -19,26 +20,28 @@ def create_function(name, params, refs, body):
 	cmds = []
 	refs = refs.copy()
 
-	def tokenize(line):
-		return line.split(' ')
-
 	def evaluate_command(tokens):
 
 		# assignment
-		if tokens[1] == '=':
-			refs[name+'_'+tokens[0]] = evaluate_expression(name+'_'+tokens[0], tokens[2:])
+		if tokens[1].strip() == '=':
+			token = name+'_'+tokens[0].strip()
+			refs[token] = evaluate_expression(token, tokens[2:])
+
+		# definition
+		if tokens[0].strip() == 'def':
+			funcname = tokens[1].strip()
 
 		# vanilla command
 		else:
 			for i in xrange(len(tokens)):
-				token = name+'_'+tokens[i]
+				token = name+'_'+tokens[i].strip()
 				if token in refs:
 					if refs[token] == None:
-						tokens[i] = select_entity(token)
+						tokens[i] = select_entity(token)+(' ' if tokens[i][-1] == ' ' else '')
 					else:
-						tokens[i] = refs[token]
+						tokens[i] = refs[token]+(' ' if tokens[i][-1] == ' ' else '')
 
-			cmds.append(' '.join(tokens))
+			cmds.append(''.join(tokens))
 
 	def evaluate_expression(destination, tokens):
 
@@ -46,7 +49,7 @@ def create_function(name, params, refs, body):
 			cmds.append(clear_tag(destination))
 
 		if len(tokens) == 1:
-			token = name+'_'+tokens[0]
+			token = name+'_'+tokens[0].strip()
 			# entity
 			if tokens[0][0] == '@':
 				cmds.append('tag %s add %s' % (tokens[0], destination))
@@ -63,10 +66,10 @@ def create_function(name, params, refs, body):
 
 			# constant
 			else:
-				return ' '.join(tokens)
+				return ''.join(tokens)
 
 		else:
-			return ' '.join(tokens)
+			return ''.join(tokens)
 
 	# handle params
 	for p in params:
