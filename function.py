@@ -112,12 +112,26 @@ class Function:
 
 	def process_expression(this, expression):
 
-		ref = expression.strip()
+		components = expression.strip().split('#')
+		ref = components[0]
 
 		path = this.reference_path(ref)
 		if path != None: # some reference
 			if this.refs[path] == 'e': # an entity
-				return select_entity(path)+(' ' if expression[-1] == ' ' else '')
+				out = ''
+				if len(components) == 2:
+					clarifiers = expression.strip().split('#')[1]
+					if clarifiers == '':
+						out = select_entity(path)
+					elif clarifiers == '1':
+						out = select_entity1(path)
+					elif clarifiers == 'p':
+						out = select_player(path)
+					elif clarifiers in ('1p', 'p1'):
+						out = select_player1(path)
+				else:
+					out = select_entity(path)
+				return out+(' ' if expression[-1] == ' ' else '')
 			else: # something else, NOT FINISHED
 				pass
 
