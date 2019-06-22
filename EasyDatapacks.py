@@ -16,9 +16,11 @@ LOADTICK = '''{
 	]
 }'''
 
-def compile(packname, files, verbose):
+def compile(destination, files, verbose):
 	'''path_in points to a text file containing your code.
 	packname points to the folder where you want your datapack to end up'''
+
+	packname = destination.split('/')[-1].split('\\')[0-1]
 
 	namespace = Namespace(packname, files)
 	try:
@@ -29,19 +31,19 @@ def compile(packname, files, verbose):
 
 	# generate the file layout
 	try:
-		shutil.rmtree(packname)
+		shutil.rmtree(destination)
 	except: pass
 
-	os.mkdir(packname)
-	os.mkdir(os.path.join(packname, 'data'))
-	with open(os.path.join(packname, 'pack.mcmeta'), 'w') as f:
+	os.mkdir(destination)
+	os.mkdir(os.path.join(destination, 'data'))
+	with open(os.path.join(destination, 'pack.mcmeta'), 'w') as f:
 		f.write(MCMETA)
-	os.mkdir(os.path.join(packname, 'data', 'minecraft'))
-	os.mkdir(os.path.join(packname, 'data', 'minecraft', 'tags'))
-	os.mkdir(os.path.join(packname, 'data', 'minecraft', 'tags', 'functions'))
+	os.mkdir(os.path.join(destination, 'data', 'minecraft'))
+	os.mkdir(os.path.join(destination, 'data', 'minecraft', 'tags'))
+	os.mkdir(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions'))
 
 	# load
-	with open(os.path.join(packname, 'data', 'minecraft', 'tags', 'functions', 'load.json'), 'w') as f:
+	with open(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions', 'load.json'), 'w') as f:
 		for func in namespace.functions:
 			if len(func) > 4 and func[-5:] == '.load':
 				f.write(LOADTICK % ('"'+packname+':'+func+'"'))
@@ -50,7 +52,7 @@ def compile(packname, files, verbose):
 			f.write(LOADTICK % "")
 
 	# tick
-	with open(os.path.join(packname, 'data', 'minecraft', 'tags', 'functions', 'tick.json'), 'w') as f:
+	with open(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions', 'tick.json'), 'w') as f:
 		for func in namespace.functions:
 			if len(func) > 4 and func[-5:] == '.tick':
 				f.write(LOADTICK % ('"'+packname+':'+func+'"'))
@@ -59,11 +61,12 @@ def compile(packname, files, verbose):
 			f.write(LOADTICK % "")
 
 	# actual datapack
-	os.mkdir(os.path.join(packname, 'data', packname))
-	os.mkdir(os.path.join(packname, 'data', packname, 'functions'))
+	os.mkdir(os.path.join(destination, 'data', packname))
+	os.mkdir(os.path.join(destination, 'data', packname, 'functions'))
 	for func in namespace.functions:
-		with open(os.path.join(packname, 'data', packname, 'functions', func+'.mcfunction'), 'w') as f:
+		with open(os.path.join(destination, 'data', packname, 'functions', func+'.mcfunction'), 'w') as f:
 			f.write('\n'.join(namespace.functions[func].commands))
 
-# compile('mydatapack', ['test.mcf'], True)
-Namespace('mydatapack', ['test.mcf']).compile(True)
+destination = 'C:/Users/Ethan/AppData/Roaming/.minecraft/saves/Hookshot Test/datapacks/hookshot'
+compile(destination, ['hookshot.mcf'], True)
+# Namespace('hookshot', ['hookshot.mcf']).compile(True)

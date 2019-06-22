@@ -138,12 +138,12 @@ class Function:
 
 		# special case: assigning as a summon
 		if ref[:7] == 'summon ':
-			if 'Tags=[' in ref:
-				this.commands.append(ref.replace('Tags=[', ',Tags=["assign",'))
-			elif '}' in ref:
-				this.commands.append(ref.replace('}', ',Tags=["assign"]}'))
+			if 'Tags:[' in ref:
+				this.commands.append(ref.replace('Tags:[', ',Tags=["assign",'))
+			elif ref[-1] == '}':
+				this.commands.append(ref[:-1]+',Tags:["assign"]}')
 			else:
-				this.commands.append(ref+' {Tags=["assign"]}')
+				this.commands.append(ref+' {Tags:["assign"]}')
 			return select_entity('assign')
 
 		# a simple constant
@@ -213,7 +213,7 @@ class Function:
 			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
 
 			# generate inner content as function
-			funcname = this.path+['rel'+str(this.relcounter)]
+			funcname = this.path+['r'+str(this.relcounter)]
 			this.functions['.'.join(funcname)] = Function(funcname, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
 			this.functions['.'.join(funcname)].compile()
 			this.relcounter += 1
@@ -221,13 +221,34 @@ class Function:
 			# setup execution call
 			this.commands.append('execute '+''.join(this.process_expression(token) for token in tokens)+' run function '+this.pack+':'+'.'.join(funcname))
 
-		# else
+		# if/else
 		elif tokens[0].strip() == 'else':
 			if this.pastline[:3] != 'if ':
 				raise Exception('"else" without matching "if" at '+this.name)
 			this.lines[this.pointer] = (this.lines[this.pointer][0], 'unless'+this.pastline[2:])
 			this.process_line()
 			return
+
+		# repeat
+		elif tokens[0].strip() == 'repeat':
+
+			count = None
+			for token in tokens[1:]:
+				if token.isdigit():
+					count = int(token)
+					break
+			if count == None:
+				raise Exception('"repeat" without a number following it at '+this.name)
+
+			# generate inner content as function
+			funcname = this.path+['r'+str(this.relcounter)]
+			this.functions['.'.join(funcname)] = Function(funcname, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
+			this.functions['.'.join(funcname)].compile()
+			this.relcounter += 1
+
+			# setup execution call
+			for i in xrange(count):
+				this.commands.append('function '+this.pack+':'+'.'.join(funcname))
 
 		# vanilla command
 		else:
