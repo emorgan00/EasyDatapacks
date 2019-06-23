@@ -31,3 +31,6 @@ if __name__ == '__main__':
 		sys.exit()
 
 	datapack.compile(params[0], params[1:], verbose, nofiles)
+
+	if not nofiles:
+		print '\nsuccessfully created datapack "'+params[0].split('/')[-1].split('\\')[-1]+'"'

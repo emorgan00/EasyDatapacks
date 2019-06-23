@@ -49,7 +49,7 @@ def compile(destination, files, verbose = False, nofiles = False):
 	with open(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions', 'load.json'), 'w') as f:
 		for func in namespace.functions:
 			if len(func) > 4 and func[-5:] == '.load':
-				f.write(LOADTICK % ('"'+packname+':'+func+'"'))
+				f.write(LOADTICK % ('"'+packname+':'+func[5:]+'"'))
 				break
 		else:
 			f.write(LOADTICK % "")
@@ -58,7 +58,7 @@ def compile(destination, files, verbose = False, nofiles = False):
 	with open(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions', 'tick.json'), 'w') as f:
 		for func in namespace.functions:
 			if len(func) > 4 and func[-5:] == '.tick':
-				f.write(LOADTICK % ('"'+packname+':'+func+'"'))
+				f.write(LOADTICK % ('"'+packname+':'+func[5:]+'"'))
 				break
 		else:
 			f.write(LOADTICK % "")
