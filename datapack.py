@@ -23,11 +23,11 @@ def compile(destination, files, verbose = False):
 	packname = destination.split('/')[-1].split('\\')[-1]
 
 	namespace = Namespace(packname, files)
-	try:
-		namespace.compile(verbose)
-	except Exception as e:
-		print '(error) '+str(e)
-		return
+	# try:
+	namespace.compile(verbose)
+	# except Exception as e:
+	# 	print '(error) '+str(e)
+	# 	return
 
 	# generate the file layout
 	try:

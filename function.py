@@ -44,6 +44,7 @@ class Function:
 		this.expecteddepth = expecteddepth
 		this.relcounter = 0
 		this.pastline = ''
+		this.used = False
 
 	def __str__(this):
 		return this.name+': '+str(this.params)+'\n\n\t'+'\n\t'.join(this.commands)+'\n'
@@ -92,6 +93,7 @@ class Function:
 				if '.'.join(funcpath) in this.functions:
 					raise Exception('Duplicate function "'+funcpath[-1]+'" in '+this.name)
 				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1, depth+1)
+				this.functions['.'.join(funcpath)].used = True
 
 		# process lines
 		while this.pointer < len(this.lines):
@@ -192,20 +194,21 @@ class Function:
 					raise Exception('Not enough paramaters for function "'+tokens[0]+'" at '+this.name)
 				if func.params[p] == 'e': # an entity
 					this.commands.append(assign_entity(expression, func.name+'.'+p))
-			this.commands.append('function '+this.pack+':'+func.name)
+			this.commands.append(this.fork_function(funcpath))
 
 		# implicit execute
 		elif tokens[0].strip() in ('as', 'at', 'positioned', 'align', 'facing', 'rotated', 'in', 'anchored', 'if', 'unless', 'store'):
 			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
 
 			# generate inner content as function
-			funcname = this.path+['r'+str(this.relcounter)]
-			this.functions['.'.join(funcname)] = Function(funcname, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
-			this.functions['.'.join(funcname)].compile()
+			funcpath = this.path+['r'+str(this.relcounter)]
+			funcname = '.'.join(funcpath)
+			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
+			this.functions[funcname].compile()
 			this.relcounter += 1
 
 			# setup execution call
-			this.commands.append('execute '+this.process_tokens(tokens)+' run function '+this.pack+':'+'.'.join(funcname))
+			this.commands.append('execute '+this.process_tokens(tokens)+' run '+this.fork_function(funcname))
 
 		# if/else
 		elif tokens[0].strip() == 'else':
@@ -227,14 +230,15 @@ class Function:
 				raise Exception('"repeat" without a number following it at '+this.name)
 
 			# generate inner content as function
-			funcname = this.path+['r'+str(this.relcounter)]
-			this.functions['.'.join(funcname)] = Function(funcname, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
-			this.functions['.'.join(funcname)].compile()
+			funcpath = this.path+['r'+str(this.relcounter)]
+			funcname = '.'.join(funcpath)
+			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
+			this.functions[funcname].compile()
 			this.relcounter += 1
 
 			# setup execution call
 			for i in xrange(count):
-				this.commands.append('function '+this.pack+':'+'.'.join(funcname))
+				this.commands.append(this.fork_function(funcname))
 
 		# vanilla command
 		else:
@@ -248,7 +252,7 @@ class Function:
 		if augsummon and tokens[0].strip() == 'summon':
 			ref = ''.join(tokens)
 			if 'Tags:[' in ref:
-				this.commands.append(ref.replace('Tags:[', ',Tags=["assign",'))
+				this.commands.append(ref.replace('Tags:[', 'Tags:["assign",'))
 			elif ref[-1] == '}':
 				this.commands.append(ref[:-1]+',Tags:["assign"]}')
 			else:
@@ -264,3 +268,12 @@ class Function:
 				token = token[:-1]
 			tokens[i] = token
 		return ''.join(tokens)
+
+	def fork_function(this, funcname):
+
+		func = this.functions[funcname]
+		if len(func.commands) > 1:
+			func.used = True
+			return 'function '+this.pack+':'+funcname
+		else:
+			return func.commands[0]
