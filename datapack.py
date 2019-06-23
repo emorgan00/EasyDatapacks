@@ -16,7 +16,7 @@ LOADTICK = '''{
 	]
 }'''
 
-def compile(destination, files, verbose = False):
+def compile(destination, files, verbose = False, nofiles = False):
 	'''path_in points to a text file containing your code.
 	packname points to the folder where you want your datapack to end up'''
 
@@ -28,6 +28,9 @@ def compile(destination, files, verbose = False):
 	# except Exception as e:
 	# 	print '(error) '+str(e)
 	# 	return
+
+	if nofiles:
+		return
 
 	# generate the file layout
 	try:
@@ -64,5 +67,5 @@ def compile(destination, files, verbose = False):
 	os.mkdir(os.path.join(destination, 'data', packname))
 	os.mkdir(os.path.join(destination, 'data', packname, 'functions'))
 	for func in namespace.functions:
-		with open(os.path.join(destination, 'data', packname, 'functions', func+'.mcfunction'), 'w') as f:
+		with open(os.path.join(destination, 'data', packname, 'functions', func[5:]+'.mcfunction'), 'w') as f:
 			f.write('\n'.join(namespace.functions[func].commands))

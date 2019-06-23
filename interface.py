@@ -30,7 +30,4 @@ if __name__ == '__main__':
 		print USAGE
 		sys.exit()
 
-	if nofiles:
-		datapack.Namespace(params[0].split('/')[-1].split('\\')[-1], params[1:]).compile(verbose)
-	else:
-		datapack.compile(params[0], params[1:], verbose)
+	datapack.compile(params[0], params[1:], verbose, nofiles)

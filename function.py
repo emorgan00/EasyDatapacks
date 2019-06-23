@@ -20,7 +20,7 @@ class Namespace:
 				# pre-processing
 				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
 
-				Function([''], {}, lines, this, 0, 0).compile()
+				Function(['main'], {}, lines, this, 0, 0).compile()
 
 		unused = []
 		# prune unused functions
@@ -58,7 +58,7 @@ class Function:
 		this.used = False
 
 	def __str__(this):
-		return this.name+': '+str(this.params)+'\n\n\t'+'\n\t'.join(this.commands)+'\n'
+		return this.name[5:]+': '+str(this.params)+'\n\n\t'+'\n\t'.join(this.commands)+'\n'
 
 	def reference_path(this, tail):
 
@@ -205,21 +205,15 @@ class Function:
 					raise Exception('Not enough paramaters for function "'+tokens[0]+'" at '+this.name)
 				if func.params[p] == 'e': # an entity
 					this.commands.append(assign_entity(expression, func.name+'.'+p))
-			this.commands.append(this.fork_function(funcpath))
+			this.commands.append(this.call_function(funcpath))
 
 		# implicit execute
 		elif tokens[0].strip() in ('as', 'at', 'positioned', 'align', 'facing', 'rotated', 'in', 'anchored', 'if', 'unless', 'store'):
 			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
 
-			# generate inner content as function
-			funcpath = this.path+['e'+str(this.relcounter)]
-			funcname = '.'.join(funcpath)
-			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
-			this.functions[funcname].compile()
-			this.relcounter += 1
-
+			funcname = this.fork_function('e')
 			# setup execution call
-			this.commands.append('execute '+this.process_tokens(tokens)+' run '+this.fork_function(funcname))
+			this.commands.append('execute '+this.process_tokens(tokens)+' run '+this.call_function(funcname))
 
 		# if/else
 		elif tokens[0].strip() == 'else':
@@ -240,16 +234,23 @@ class Function:
 			if count == None:
 				raise Exception('"repeat" without a number following it at '+this.name)
 
-			# generate inner content as function
-			funcpath = this.path+['r'+str(this.relcounter)]
-			funcname = '.'.join(funcpath)
-			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
-			this.functions[funcname].compile()
-			this.relcounter += 1
-
+			funcname = this.fork_function('r')
 			# setup execution call
 			for i in xrange(count):
-				this.commands.append(this.fork_function(funcname))
+				this.commands.append(this.call_function(funcname))
+
+		# while loop
+		elif tokens[0].strip() in ('while', 'whilenot'):
+			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
+
+			funcname = this.fork_function('w')
+			# setup execution call
+			if tokens[0].strip() == 'while':
+				call = 'execute if '+this.process_tokens(tokens[1:])+' run '+this.call_function(funcname, True)
+			else:
+				call = 'execute unless '+this.process_tokens(tokens[1:])+' run '+this.call_function(funcname, True)
+			this.commands.append(call)
+			this.functions[funcname].commands.append(call)
 
 		# vanilla command
 		else:
@@ -280,11 +281,21 @@ class Function:
 			tokens[i] = token
 		return ''.join(tokens)
 
-	def fork_function(this, funcname):
+	def fork_function(this, code):
+
+		# generate inner content as function
+		funcpath = this.path+[code+str(this.relcounter)]
+		funcname = '.'.join(funcpath)
+		this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
+		this.functions[funcname].compile()
+		this.relcounter += 1
+		return funcname
+
+	def call_function(this, funcname, nocollapse = False):
 
 		func = this.functions[funcname]
-		if len(func.commands) > 1:
+		if len(func.commands) > 1 or nocollapse:
 			func.used = True
-			return 'function '+this.pack+':'+funcname
+			return 'function '+this.pack+':'+funcname[5:]
 		else:
 			return func.commands[0]
