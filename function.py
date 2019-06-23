@@ -106,7 +106,7 @@ class Function:
 		for ref in this.locals:
 			if this.refs[ref] == 'e': # an entity
 				this.commands.append(clear_tag(ref))
-			else: # something else, NOT FINISHED
+			else: # something else
 				pass
 
 			this.refs.pop(ref)
@@ -133,7 +133,7 @@ class Function:
 				else:
 					out = select_entity(path)
 				return out+(' ' if expression[-1] == ' ' else '')
-			else: # something else, NOT FINISHED
+			else: # something else
 				pass
 
 		# special case: assigning as a summon
@@ -148,10 +148,6 @@ class Function:
 
 		# a simple constant
 		return expression
-
-	def fork_function(this, line):
-
-		pass
 
 	def process_line(this):
 
@@ -176,18 +172,18 @@ class Function:
 			else:
 				if this.refs[dest] == 'e': # an entity
 					this.commands.append(clear_tag(dest))
-				else: # something else, NOT FINISHED
+				else: # something else
 					pass
 
 			# evaluate the right side, perform the new assignment
-			expression = this.process_expression(''.join(tokens[2:]))
+			expression = this.process_tokens(tokens[2:])
 			if expression[0] == '@': # an entity
 				this.refs[dest] = 'e'
 				this.commands.append(assign_entity(expression, dest))
 				# special case: assigning as a summon
 				if expression == select_entity('assign'):
 					this.commands.append(clear_tag('assign'))
-			else: # something else, NOT FINISHED 
+			else: # something else
 				pass
 
 		# definining a new function
@@ -219,7 +215,7 @@ class Function:
 			this.relcounter += 1
 
 			# setup execution call
-			this.commands.append('execute '+''.join(this.process_expression(token) for token in tokens)+' run function '+this.pack+':'+'.'.join(funcname))
+			this.commands.append('execute '+this.process_tokens(tokens)+' run function '+this.pack+':'+'.'.join(funcname))
 
 		# if/else
 		elif tokens[0].strip() == 'else':
@@ -252,6 +248,18 @@ class Function:
 
 		# vanilla command
 		else:
-			this.commands.append(''.join(this.process_expression(token) for token in tokens))
+			this.commands.append(this.process_tokens(tokens))
 
 		this.pastline = line
+
+	def process_tokens(this, tokens):
+
+		for i, token in enumerate(tokens):
+			refpath = this.reference_path(token.split('#')[0])
+			token = this.process_expression(token)
+			# narrowing
+			if refpath != None and token[0] == '@' and i != len(tokens)-1 and tokens[i+1][0] == '[':
+				tokens[i+1] = ','+tokens[i+1][1:]
+				token = token[:-1]
+			tokens[i] = token
+		return ''.join(tokens)

@@ -16,11 +16,11 @@ LOADTICK = '''{
 	]
 }'''
 
-def compile(destination, files, verbose):
+def compile(destination, files, verbose = False):
 	'''path_in points to a text file containing your code.
 	packname points to the folder where you want your datapack to end up'''
 
-	packname = destination.split('/')[-1].split('\\')[0-1]
+	packname = destination.split('/')[-1].split('\\')[-1]
 
 	namespace = Namespace(packname, files)
 	try:
@@ -66,7 +66,3 @@ def compile(destination, files, verbose):
 	for func in namespace.functions:
 		with open(os.path.join(destination, 'data', packname, 'functions', func+'.mcfunction'), 'w') as f:
 			f.write('\n'.join(namespace.functions[func].commands))
-
-destination = 'C:/Users/Ethan/AppData/Roaming/.minecraft/saves/Hookshot Test/datapacks/hookshot'
-compile(destination, ['hookshot.mcf'], True)
-# Namespace('hookshot', ['hookshot.mcf']).compile(True)
