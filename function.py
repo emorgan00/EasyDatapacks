@@ -20,9 +20,20 @@ class Namespace:
 				# pre-processing
 				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
 
-				Function([name], {}, lines, this, 0, 0).compile()
+				Function([''], {}, lines, this, 0, 0).compile()
+
+		unused = []
+		# prune unused functions
+		for f in this.functions:
+			if not this.functions[f].used:
+				unused.append(f)
+		for f in unused:
+			this.functions.pop(f)
+			if verbose:
+				print 'collapsed branch '+f
 
 		if verbose:
+			print ''
 			for f in this.functions:
 				print this.functions[f]
 
@@ -201,7 +212,7 @@ class Function:
 			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
 
 			# generate inner content as function
-			funcpath = this.path+['r'+str(this.relcounter)]
+			funcpath = this.path+['e'+str(this.relcounter)]
 			funcname = '.'.join(funcpath)
 			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
 			this.functions[funcname].compile()
