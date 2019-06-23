@@ -20,6 +20,8 @@ if __name__ == '__main__':
 		elif param in ('-n', '-nofiles'):
 			nofiles = True
 			verbose = True
+		elif param[-3:] == '.py':
+			print 'ignoring .py file as parameter'
 		else:
 			params.append(param)
 
@@ -28,7 +30,10 @@ if __name__ == '__main__':
 		print USAGE
 		sys.exit()
 
+	if verbose:
+		print '\ngenerated output:\n'
+
 	if nofiles:
-		compile(params[0], params[1:], verbose)
+		datapack.Namespace(params[0].split('/')[-1].split('\\')[-1], params[1:]).compile(verbose)
 	else:
-		Namespace(params[0].split('/')[-1].split('\\')[-1], params[1:]).compile(verbose)
+		datapack.compile(params[0], params[1:], verbose)

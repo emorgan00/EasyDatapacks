@@ -14,7 +14,7 @@ class Namespace:
 
 		for file in this.files:
 			with open(file, 'r') as f:
-				name = file.split('/')[-1].split('.')[0]
+				name = file.split('/')[-1].split('\\')[-1].split('.')[0]
 				lines = f.readlines()
 
 				# pre-processing

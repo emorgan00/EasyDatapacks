@@ -26,7 +26,7 @@ def compile(destination, files, verbose = False):
 	try:
 		namespace.compile(verbose)
 	except Exception as e:
-		print '(error) '+e.args[0]
+		print '(error) '+str(e.args[0])
 		return
 
 	# generate the file layout
