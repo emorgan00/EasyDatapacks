@@ -136,16 +136,6 @@ class Function:
 			else: # something else
 				pass
 
-		# special case: assigning as a summon
-		if ref[:7] == 'summon ':
-			if 'Tags:[' in ref:
-				this.commands.append(ref.replace('Tags:[', ',Tags=["assign",'))
-			elif ref[-1] == '}':
-				this.commands.append(ref[:-1]+',Tags:["assign"]}')
-			else:
-				this.commands.append(ref+' {Tags:["assign"]}')
-			return select_entity('assign')
-
 		# a simple constant
 		return expression
 
@@ -176,7 +166,7 @@ class Function:
 					pass
 
 			# evaluate the right side, perform the new assignment
-			expression = this.process_tokens(tokens[2:])
+			expression = this.process_tokens(tokens[2:], True)
 			if expression[0] == '@': # an entity
 				this.refs[dest] = 'e'
 				this.commands.append(assign_entity(expression, dest))
@@ -184,7 +174,7 @@ class Function:
 				if expression == select_entity('assign'):
 					this.commands.append(clear_tag('assign'))
 			else: # something else
-				pass
+				raise Exception('Invalid assignment: cannot assign "'+expression+'" to variable at '+this.name)
 
 		# definining a new function
 		elif tokens[0].strip() == 'def':
@@ -252,7 +242,18 @@ class Function:
 
 		this.pastline = line
 
-	def process_tokens(this, tokens):
+	def process_tokens(this, tokens, augsummon = False):
+
+		# special case: assigning as a summon
+		if augsummon and tokens[0].strip() == 'summon':
+			ref = ''.join(tokens)
+			if 'Tags:[' in ref:
+				this.commands.append(ref.replace('Tags:[', ',Tags=["assign",'))
+			elif ref[-1] == '}':
+				this.commands.append(ref[:-1]+',Tags:["assign"]}')
+			else:
+				this.commands.append(ref+' {Tags:["assign"]}')
+			return select_entity('assign')
 
 		for i, token in enumerate(tokens):
 			refpath = this.reference_path(token.split('#')[0])
