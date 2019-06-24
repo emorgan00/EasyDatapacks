@@ -50,11 +50,14 @@ class Namespace:
 			load = this.functions['main.load']
 			commands = []
 
+			commands.append(summon_vars(this.pack))
+
 			for ref in this.ints:
 				commands.append('scoreboard objectives add '+ref+' dummy')
 
 			# handle constants
 			for i, val in enumerate(this.consts):
+				commands.append('scoreboard objectives add CONSTANT.'+str(i)+' dummy')
 				commands.append(assign_int(val, 'CONSTANT.'+str(i), this.pack))
 
 			load.commands = commands+load.commands

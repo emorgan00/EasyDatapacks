@@ -21,16 +21,19 @@ def clear_tag(tag):
 # integer tools
 
 def assign_int(value, var, pack):
-	return 'scoreboard players set @e[name=%s.VARS] %s %s' % (pack, var, value)
+	return 'scoreboard players set @e[name=%s.VARS,limit=1] %s %s' % (pack, var, value)
 
 def add_int(value, var, pack):
-	return 'scoreboard players add @e[name=%s.VARS] %s %s' % (pack, var, value)
+	return 'scoreboard players add @e[name=%s.VARS,limit=1] %s %s' % (pack, var, value)
 
 def sub_int(value, var, pack):
-	return 'scoreboard players remove @e[name=%s.VARS] %s %s' % (pack, var, value)
+	return 'scoreboard players remove @e[name=%s.VARS,limit=1] %s %s' % (pack, var, value)
 
 def augment_int(var1, var2, op, pack):
-	return 'scoreboard players operation @e[name=%s.VARS] %s %s @e[name=%s.VARS] %s' % (pack, var1, op, pack, var2)
+	return 'scoreboard players operation @e[name=%s.VARS,limit=1] %s %s @e[name=%s.VARS,limit=1] %s' % (pack, var1, op, pack, var2)
 
 def select_int(var, pack):
-	return '@e[name=%s.VARS] %s' % (pack, var)
+	return '@e[name=%s.VARS,limit=1] %s' % (pack, var)
+
+def summon_vars(pack):
+	return 'execute unless entity @e[name='+pack+'.VARS] run summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,CustomName:"\\"'+pack+'.VARS\\""}'
