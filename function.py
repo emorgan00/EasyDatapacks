@@ -30,12 +30,12 @@ class Namespace:
 		for f in unused:
 			this.functions.pop(f)
 			if verbose:
-				print 'collapsed branch '+f
+				print('collapsed branch '+f)
 
 		if verbose:
-			print ''
+			print('')
 			for f in this.functions:
-				print this.functions[f]
+				print(this.functions[f])
 
 class Function:
 
@@ -74,7 +74,7 @@ class Function:
 
 	def reference_path(this, tail):
 
-		for i in xrange(len(this.path), 0, -1):
+		for i in range(len(this.path), 0, -1):
 			test_path = '.'.join(this.path[:i])+'.'+tail
 			if test_path in this.refs:
 				return test_path
@@ -82,7 +82,7 @@ class Function:
 
 	def function_path(this, tail):
 
-		for i in xrange(len(this.path), 0, -1):
+		for i in range(len(this.path), 0, -1):
 			test_path = '.'.join(this.path[:i])+'.'+tail
 			if test_path in this.functions:
 				return test_path
@@ -253,7 +253,7 @@ class Function:
 
 			funcname = this.fork_function('r')
 			# setup execution call
-			for i in xrange(count):
+			for i in range(count):
 				this.commands.append(this.call_function(funcname))
 			this.check_break(funcname)
 
