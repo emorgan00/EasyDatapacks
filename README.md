@@ -9,29 +9,12 @@ Normally, datapacks are separated across many folders and files. Datapack creato
 ## Defining Functions
 
 Since everything is in one file, we need a way to create separate functions and run them independently. The solution to this is simple: simply use the python-inspired “def” keyword to define an independent function. Here’s an example:
-
- ```
- def greet():
-     say “Hello everyone!”
- ```
-
-By the way, the colon and parentheses are all optional.
-
 ```
 def greet:
     say “Hello everyone!"
 ```
-```
-def greet()
-    say “Hello everyone!”
-```
-```
-def greet
-    say “Hello everyone!”
-```
 
-All of the above are valid. I would recommend using the 1st method out of the 3 above. Indentation in EasyDatapacks is always a single tab.
-
+Indentation in EasyDatapacks is always a single tab.
 
 ## Parameters?!
 
@@ -177,6 +160,31 @@ def example:
 ```
 The two programs above will do the exact same thing.
 
+## Integer Variables
+
+The minecraft scoreboard already allows you to work with integer variables, but EasyDatapacks offers several shortcuts for quickly working with ints without having to worry about entities or objectives. Declaring an integer variable works just like declaring a entity variable:
+```
+def example:
+    score = 10
+```
+The scoreboard also allows you to change variables with augmented assignments, and that is implemented here as well:
+```
+def example:
+    score = 10
+    score *= 2
+    score /= 10
+```
+Anything that is available with the /scoreboard operation command is allowed.
+
+Of course, variables can be assigned to other variables, and used to augment other variables:
+```
+def example:
+    a = 10
+    b = 20
+    a *= b
+    b = a
+```
+
 ## Load and Tick
 
 Most datapacks include two special functions: “load” and “tick”. Normally these are specified in the load.json and tick.json files respectively, but this is too complicated. In an EasyDatapacks program, simply name your function “load” or “tick”, and it will automatically work. Here’s an example:
@@ -308,30 +316,30 @@ EasyDatapacks uses a compiler written in python. The file which you create will 
 Code on GitHub: https://github.com/emorgan00/EasyDatapacks
 
 ## Compiling from the Command Line
-note: This section will assume you are familiar with using the command line, and running python files.
+**note:** This section will assume you are familiar with using the command line, and running python files.
 
-To use the command line interface, run interface.py:
+To use the command line interface, run EasyDatapacks.py:
 
-`$ python interface.py <destination-folder> <input-file>`
+`$ python EasyDatapacks.py <destination-folder> <input-file>`
 
 This will take the file in <input-file> and compile it into a datapack located at <destination-folder>. Here is an example of what this might look like:
 
-`$ python interface.py path\to\MyWorld\datapacks\mydatapack path\to\mydatapack.mcf`
+`$ python EasyDatapacks.py path\to\MyWorld\datapacks\mydatapack path\to\mydatapack.mcf`
 
 Note that I have adopted the .mcf extension for programs in EasyDatapacks, as a shorter version of .mcfunction. I would recommend using the same.
 
 Additionally, you can add one of the following flags:
-
+```
 -v, -verbose: print out all generated commands.
 -n, -nofiles: don't generate any files.
-
+```
 Use a flag like this:
 
-`$ python interface.py -v <destination-folder> <input-file>`
+`$ python EasyDatapacks.py -v <destination-folder> <input-file>`
 
 You can also compile multiple files at once, like this:
 
-`$ python interface.py <destination-folder> <file1> <file2> <...>`
+`$ python EasyDatapacks.py <destination-folder> <file1> <file2> <...>`
 
 Compiling multiple files works exactly as if all the code from the separate files was all in one file.
 
