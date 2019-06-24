@@ -411,7 +411,6 @@ class Function:
 		# special case: conditional
 		if conditional and len(args) > 2:
 			for i in range(1, len(args)-1):
-				print args, i
 				op = args[i]
 				if op in ('<', '>', '==', '<=', '>='):
 					var = this.reference_path(args[i-1])
