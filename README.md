@@ -214,7 +214,7 @@ def example3:
     as @e unless a <= 0:
         say "integer comparisons can also be used in chained execute statements!"
 ```
-The syntax is always: <variable> <operator> <constant>
+The syntax is always: `<variable> <operator> <constant>`
 
 ## Load and Tick
 
