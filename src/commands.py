@@ -37,3 +37,15 @@ def select_int(var, pack):
 
 def summon_vars(pack):
 	return 'execute unless entity @e[name='+pack+'.VARS] run summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,CustomName:"\\"'+pack+'.VARS\\""}'
+
+def check_int(var, op, val, pack):
+	if op == '==':
+		return 'entity @e[name=%s.VARS,scores={%s=%s}]' % (pack, var, val)
+	if op == '>=':
+		return 'entity @e[name=%s.VARS,scores={%s=%s..}]' % (pack, var, val)
+	if op == '<=':
+		return 'entity @e[name=%s.VARS,scores={%s=..%s}]' % (pack, var, val)
+	if op == '>':
+		return 'entity @e[name=%s.VARS,scores={%s=%s..}]' % (pack, var, str(int(val)+1))
+	if op == '<':
+		return 'entity @e[name=%s.VARS,scores={%s=..%s}]' % (pack, var, str(int(val)-1))

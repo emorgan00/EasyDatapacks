@@ -184,6 +184,16 @@ def example:
     a *= b
     b = a
 ```
+Integer variables can also be mixed with scoreboard commands:
+```
+def example:
+    scoreboard objectives add score dummy
+    magicnumber = 10
+    scoreboard players operation @p score *= magicnumber
+    scoreboard players operation magicnumber += @p score
+```
+Finally, integer variables can be incorporated 
+
 
 ## Load and Tick
 
@@ -238,6 +248,8 @@ def tick:
     scoreboard players add Global timePassed 1
 ```
 Now, the scope of Global is across the whole program, and it can be accessed anywhere, but we don’t assign an armor stand into it until the load function.
+
+Delayed assignments also work for integer variables, and are used in the same way.
 
 ## Clarifiers
 

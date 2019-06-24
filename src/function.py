@@ -321,7 +321,7 @@ class Function:
 
 			funcname = this.fork_function('e')
 			# setup execution call
-			this.commands.append('execute '+this.process_tokens(tokens)+' run '+this.call_function(funcname))
+			this.commands.append('execute '+this.process_tokens(tokens, False, True)+' run '+this.call_function(funcname))
 			this.check_break(funcname)
 
 		# if/else
@@ -356,9 +356,9 @@ class Function:
 			funcname = this.fork_function('w')
 			# setup execution call
 			if tokens[0].strip() == 'while':
-				call = 'execute if '+this.process_tokens(tokens[1:])+' run '+this.call_function(funcname, True)
+				call = 'execute if '+this.process_tokens(tokens[1:], False, True)+' run '+this.call_function(funcname, True)
 			else:
-				call = 'execute unless '+this.process_tokens(tokens[1:])+' run '+this.call_function(funcname, True)
+				call = 'execute unless '+this.process_tokens(tokens[1:], False, True)+' run '+this.call_function(funcname, True)
 			this.commands.append(call)
 			this.functions[funcname].call_loop(funcname, call)
 			if this.functions[funcname].hasbreak:
@@ -393,11 +393,13 @@ class Function:
 
 		this.pastline = line
 
-	def process_tokens(this, tokens, augsummon = False):
+	def process_tokens(this, tokens, augsummon = False, conditional = False):
+
+		args = broad_tokenize(''.join(tokens).strip())
 
 		# special case: assigning as a summon
-		if augsummon and tokens[0].strip() == 'summon':
-			ref = ''.join(tokens)
+		if augsummon and args[0] == 'summon':
+			ref = ' '.join(args)
 			if 'Tags:[' in ref:
 				this.commands.append(ref.replace('Tags:[', 'Tags:["assign",'))
 			elif ref[-1] == '}':
@@ -405,6 +407,26 @@ class Function:
 			else:
 				this.commands.append(ref+' {Tags:["assign"]}')
 			return select_entity('assign')
+
+		# special case: conditional
+
+		if conditional and len(args) > 2:
+			for i in range(1, len(args)-1):
+				print args, i
+				op = args[i]
+				if op in ('<', '>', '==', '<=', '>='):
+					var = this.reference_path(args[i-1])
+					if var == None or this.refs[var] != 'i':
+						raise Exception('"'+args[i-1]+'" is not a valid integer variable at '+this.name)
+					if not args[i+1].isdigit():
+						raise Exception('"'+args[i+1]+'" is not an integer at '+this.name)
+					if i > 1 and not args[i-2] in ('if', 'unless', 'while', 'whilenot'):
+						raise Exception('Integer comparison without a conditional at '+this.name)
+					args[i-1] = check_int(var, op, args[i+1], this.pack)
+					args[i] = None
+					args[i+1] = None
+
+		tokens = tokenize(' '.join(a for a in args if a != None))
 
 		for i, token in enumerate(tokens):
 			refpath = this.reference_path(token.split('#')[0])
