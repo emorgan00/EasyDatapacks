@@ -293,6 +293,8 @@ class Function:
 		# vanilla command
 		elif this.infunc == None:
 			raise Exception('Vanilla command outside of a function. This is not allowed, consider putting it inside the load function.')
+		elif tokens[0].strip() == 'function':
+			raise Exception('The /function command is no longer used. Just type your function as if it were a command. (at '+this.name+')')
 		else:
 			this.commands.append(this.process_tokens(tokens))
 

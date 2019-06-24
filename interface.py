@@ -12,7 +12,7 @@ flags:
 if __name__ == '__main__':
 
 	params = []
-	verbose, nofiles = False, False
+	verbose, nofiles, success = False, False, False
 
 	for param in sys.argv:
 		if param in ('-v', '-verbose'):
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 		print(USAGE)
 		sys.exit()
 
-	datapack.compile(params[0], params[1:], verbose, nofiles)
+	success = datapack.compile(params[0], params[1:], verbose, nofiles)
 
-	if not nofiles:
+	if success:
 		print('successfully created datapack "'+params[0].split('/')[-1].split('\\')[-1]+'"')

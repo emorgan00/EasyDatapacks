@@ -23,14 +23,14 @@ def compile(destination, files, verbose = False, nofiles = False):
 	packname = destination.split('/')[-1].split('\\')[-1]
 
 	namespace = Namespace(packname, files)
-	# try:
-	namespace.compile(verbose)
-	# except Exception as e:
-	# 	print '(error) '+str(e)
-	# 	return
+	try:
+		namespace.compile(verbose)
+	except Exception as e:
+		print '(error) '+str(e)
+		return False
 
 	if nofiles:
-		return
+		return False
 
 	# generate the file layout
 	try:
@@ -69,3 +69,5 @@ def compile(destination, files, verbose = False, nofiles = False):
 	for func in namespace.functions:
 		with open(os.path.join(destination, 'data', packname, 'functions', func[5:]+'.mcfunction'), 'w') as f:
 			f.write('\n'.join(namespace.functions[func].commands))
+
+	return True
