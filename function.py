@@ -331,7 +331,7 @@ class Function:
 		funcpath = this.path+[code+str(this.relcounter)]
 
 		# check if creating new loop
-		if code in ('r', 'w'):
+		if code in ('w'):
 			inloop = funcpath
 
 		# check if a break
@@ -415,6 +415,6 @@ class Function:
 
 			cmd = 'kill @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE]'
 			this.functions[funcname].commands.insert(0, cmd)
-			
+
 			cmd = 'execute if entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] run '+call
 			this.functions[funcname].commands.append(cmd)
