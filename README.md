@@ -18,7 +18,7 @@ Indentation in EasyDatapacks is always a single tab.
 
 ## Parameters?!
 
-Normally, functions can only be run as-is and don’t accept any parameters. EasyDatapacks allows you to include entities as parameters. (note: the “#p” at the end of the parameter is a clarifier. Ignore it for now, it will be explained later on.)
+Normally, functions can only be run as-is and don’t accept any parameters. EasyDatapacks allows you to include entities (and integers) as parameters. (note: the “#p” at the end of the parameter is a clarifier. Ignore it for now, it will be explained later on.)
 ```
 def greet(player):
     tellraw player#p “Hello!”
@@ -35,7 +35,7 @@ def impersonate A B:
 ```
 ## Calling Functions
 
-Guess what, functions aren’t functions anymore. They are commands. The /function command is no longer used. With def, you are creating a brand new command which you can use just like vanilla commands. The only difference is that your new command only has entities as parameters. Here’s an example:
+Guess what, functions aren’t functions anymore. They are commands. The /function command is no longer used. With def, you are creating a brand new command which you can use just like vanilla commands. The only difference is that your new command only has entities (and integers) as parameters. Here’s an example:
 ```
 def greet player:
     tellraw player#p “Hello!”
@@ -160,61 +160,31 @@ def example:
 ```
 The two programs above will do the exact same thing.
 
-## Integer Variables
+## Clarifiers
 
-The minecraft scoreboard already allows you to work with integer variables, but EasyDatapacks offers several shortcuts for quickly working with ints without having to worry about entities or objectives. Declaring an integer variable works just like declaring a entity variable:
+Some commands require you to supply a selector which only includes players, or which only includes a single entity. Since a variable refers to one or more entities, something like
 ```
 def example:
-    score = 10
+    player = @p
+    tellraw player “hi”
 ```
-The scoreboard also allows you to change variables with augmented assignments, and that is implemented here as well:
-```
-def example:
-    score = 10
-    score *= 2
-    score /= 10
-```
-Anything that is available with the /scoreboard operation command is allowed.
-
-Of course, variables can be assigned to other variables, and used to augment other variables:
-```
-def example:
-    a = 10
-    b = 20
-    a *= b
-    b = a
-```
-Integer variables can also be mixed with scoreboard commands:
-```
-def example:
-    scoreboard objectives add score dummy
-    magicnumber = 10
-    scoreboard players operation @p score *= magicnumber
-    scoreboard players operation magicnumber += @p score
-```
-Finally, integer variables can be incorporated into if, else, while, and whilenot statements. There are five comparison operators available:
-
-`<, <=, ==, =>, >`
-
-Comparison is always between an integer and a constant, and is done as follows:
+actually won’t work. The function will fail to load because you can’t run tellraw on entities. To solve this problem, you need to use clarifiers. A clarifier is a # followed by p, to indicate players, or 1, to indicate a single entity. You can combine both as #1p or #p1. You write it directly after the variable name, like this:
 ```
 def example1:
-    a = 10
-    while a > 0:
-        say "this will be repeated 10 times"
-        a -= 1
-
+    player = @p
+    tellraw player#p “hi”
 def example2:
-    a = 100
-    if a == 100:
-        say "a is equal to 100"
-
-def example3:
-    a = 10
-    as @e unless a <= 0:
-        say "integer comparisons can also be used in chained execute statements!"
+    target = @r
+    tp @a target#1
 ```
-The syntax is always: `<variable> <operator> <constant>`
+We had to use #1 on the target variable because you can only tp to a single entity.
+
+When using clarifiers combined with selectors, the syntax should be as follows:
+```
+def example:
+    players = @a
+    tellraw players#p[distance=100] “hi”
+```
 
 ## Load and Tick
 
@@ -272,31 +242,6 @@ Now, the scope of Global is across the whole program, and it can be accessed any
 
 Delayed assignments also work for integer variables, and are used in the same way.
 
-## Clarifiers
-
-Some commands require you to supply a selector which only includes players, or which only includes a single entity. Since a variable refers to one or more entities, something like
-```
-def example:
-    player = @p
-    tellraw player “hi”
-```
-actually won’t work. The function will fail to load because you can’t run tellraw on entities. To solve this problem, you need to use clarifiers. A clarifier is a # followed by p, to indicate players, or 1, to indicate a single entity. You can combine both as #1p or #p1. You write it directly after the variable name, like this:
-```
-def example1:
-    player = @p
-    tellraw player#p “hi”
-def example2:
-    target = @r
-    tp @a target#1
-```
-We had to use #1 on the target variable because you can only tp to a single entity.
-
-When using clarifiers combined with selectors, the syntax should be as follows:
-```
-def example:
-    players = @a
-    tellraw players#p[distance=100] “hi”
-```
 ## Repeat Loops
 
 Suppose you want to run one of your functions 5 times. Rather than actually typing out the function call 5 times, just use the repeat command:
@@ -338,6 +283,97 @@ def movetowall:
             break
         tp @s ^ ^ ^0.1
 ```
+
+## Integer Variables
+
+The minecraft scoreboard already allows you to work with integer variables, but EasyDatapacks offers several shortcuts for quickly working with ints without having to worry about entities or objectives. Declaring an integer variable works just like declaring a entity variable:
+```
+def example:
+    score = 10
+```
+The scoreboard also allows you to change variables with augmented assignments, and that is implemented here as well:
+```
+def example:
+    score = 10
+    score *= 2
+    score /= 10
+```
+Anything that is available with the /scoreboard operation command is allowed.
+
+Of course, variables can be assigned to other variables, and used to augment other variables:
+```
+def example:
+    a = 10
+    b = 20
+    a *= b
+    b = a
+```
+Integer variables can also be mixed with scoreboard commands:
+```
+def example:
+    scoreboard objectives add score dummy
+    magicnumber = 10
+    scoreboard players operation @p score *= magicnumber
+    scoreboard players operation magicnumber += @p score
+```
+Finally, integer variables can be incorporated into if, else, while, and whilenot statements. There are five comparison operators available:
+
+`<, <=, ==, =>, >`
+
+Comparison is always between an integer and a constant, and is done as follows:
+```
+def example1:
+    a = 10
+    while a > 0:
+        say "this will be repeated 10 times"
+        a -= 1
+
+def example2:
+    a = 100
+    if a == 100:
+        say "a is equal to 100"
+
+def example3:
+    a = 10
+    as @e unless a <= 0:
+        say "integer comparisons can also be used in chained execute statements!"
+```
+The syntax is always: `<variable> <operator> <constant>`
+
+## Integers as Parameters
+
+Integer parameters work exactly as you might expect. When calling a function that has an integer parameter, it looks something like this:
+```
+def example1:
+    speak_n_times 10
+
+def example2:
+    b = 10
+    speak_n_times b
+```
+Both of the above are valid.
+
+Defining a function that takes an integer as a parameter is a little more complicated, as you will need to use clarifiers, since all parameters refer to entities by default. Tagging a parameter with #i will cause it to refer to an integer.
+```
+def speak_n_times n#i:
+    while n > 0:
+        say "This message will be repeated n times!"
+        n -= 1
+
+def example:
+    speak_n_times 10
+```
+For readability purposes, it is recommended that you also tag you entity parameters with #e, like this:
+```
+def greet_n_times player#e n#i:
+    while n > 0:
+        tellraw player#p "Good morning!"
+        n -= 1
+
+def example:
+    greet_n_times @r 10
+```
+
 ## Comments
 
 Comments in EasyDatapacks work exactly the same as in normal commands. Just put a “#” at the beginning of the line, and everything on that line will be ignored.

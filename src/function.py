@@ -129,8 +129,11 @@ class Function:
 
 		# pre-process params into local variables
 		for p in this.params:
-			this.refs[this.name+'.'+p] = 'e'
+			this.refs[this.name+'.'+p] = this.params[p]
 			this.locals.append(this.name+'.'+p)
+
+			if this.params[p] == 'i':
+				this.namespace.ints.add(this.name+'.'+p)
 
 		# pre-process function headers:
 		for i, p in enumerate(this.lines[this.pointer:]):
@@ -140,13 +143,24 @@ class Function:
 
 				tokens = tokenize(p[1])
 				funcpath = this.path+[tokens[1].strip()]
-				if not all(c.isalnum() or c in '_ ' for c in tokens[1]):
+				if not valid_name(tokens[1].strip()):
 					raise Exception('Invalid function name: "'+tokens[1].strip()+'"')
 
 				funcparams = {}
-				for token in tokens[2:]:
-					if all(c.isalnum() or c in '_' for c in token):
-						funcparams[token] = 'e'
+				for token in (''.join(tokens[2:])).split(' '):
+					token = token.strip(':')
+					if len(token) == 0: continue
+					if valid_name(token):
+						param = token.split('#')
+						if len(param) == 1:
+							funcparams[token] = 'e'
+						elif param[1] in ('e', 'i'):
+							funcparams[param[0]] = param[1]
+						else:
+							raise Exception('Invalid parameter clarifier: "'+token.strip()+'" for function '+tokens[1].strip())
+					else:
+						raise Exception('Invalid parameter name "'+token.strip()+'" for function '+tokens[1].strip())
+
 				if '.'.join(funcpath) in this.functions:
 					raise Exception('Duplicate function "'+funcpath[-1]+'" in '+this.name)
 
@@ -193,6 +207,7 @@ class Function:
 				else:
 					out = select_entity(path)
 				return out+(' ' if expression[-1] == ' ' else '')
+
 			elif this.refs[path] == 'i': # integer variable
 				return select_int(path, this.pack)
 
@@ -307,11 +322,18 @@ class Function:
 			funcparams = broad_tokenize(''.join(tokens[1:]))
 			for i, p in enumerate(func.params):
 				try:
-					expression = this.process_expression(tokens[i+1])
+					expression = this.process_expression(funcparams[i]).strip()
 				except IndexError:
-					raise Exception('Not enough paramaters for function "'+tokens[0]+'" at '+this.name)
+					raise Exception('Not enough paramaters for function "'+tokens[0].strip()+'" at '+this.name)
+
 				if func.params[p] == 'e': # an entity
 					this.commands.append(assign_entity(expression, func.name+'.'+p))
+
+				elif func.params[p] == 'i': # in integer
+					if expression.isdigit(): # constant int
+						this.commands.append(assign_int(expression, func.name+'.'+p, this.pack))
+					elif expression[0] == '@': # reference to int
+						this.commands.append(augment_int(func.name+'.'+p, this.reference_path(funcparams[i]), '=', this.pack))
 
 			this.commands.append(this.call_function(funcpath))
 

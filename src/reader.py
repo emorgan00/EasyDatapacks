@@ -45,3 +45,10 @@ def tab_depth(line):
 		else:
 			break
 	return c
+
+# returns whether this is a valid name for a funcname or parameter
+def valid_name(expression):
+	for c in expression:
+		if c not in 'qwertyuiopasdfghjklzxcvbnm#_':
+			return False
+	return True
