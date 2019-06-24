@@ -14,7 +14,7 @@ def greet:
     say “Hello everyone!"
 ```
 
-Indentation in EasyDatapacks is always a single tab.
+Indentation in EasyDatapacks is either a single tab, or 4 spaces.
 
 ## Parameters?!
 
