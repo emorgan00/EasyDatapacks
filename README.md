@@ -192,8 +192,29 @@ def example:
     scoreboard players operation @p score *= magicnumber
     scoreboard players operation magicnumber += @p score
 ```
-Finally, integer variables can be incorporated 
+Finally, integer variables can be incorporated into if, else, while, and whilenot statements. There are five comparison operators available:
 
+`<, <=, ==, =>, >`
+
+Comparison is always between an integer and a constant, and is done as follows:
+```
+def example1:
+    a = 10
+    while a > 0:
+        say "this will be repeated 10 times"
+        a -= 1
+
+def example2:
+    a = 100
+    if a == 100:
+        say "a is equal to 100"
+
+def example3:
+    a = 10
+    as @e unless a <= 0:
+        say "integer comparisons can also be used in chained execute statements!"
+```
+The syntax is always: <variable> <operator> <constant>
 
 ## Load and Tick
 
