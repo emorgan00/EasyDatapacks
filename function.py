@@ -230,16 +230,25 @@ class Function:
 
 			# evaluate the right side, perform the new assignment
 			expression = this.process_tokens(tokens[2:], True)
-			if expression[0] == '@': # an entity
+			refpath = this.reference_path((''.join(tokens[2:])).strip())
+
+			if expression.isdigit(): # an integer constant
+				this.refs[dest] = 'i'
+				this.commands.append(assign_int(expression, dest, this.pack))
+				this.namespace.ints.add(dest)
+
+			elif refpath in this.refs and this.refs[refpath] == 'i': # an integer variable
+				this.refs[dest] = 'i'
+				this.commands.append(augment_int(dest, refpath, '=', this.pack))
+				this.namespace.ints.add(dest)
+
+			elif expression[0] == '@': # an entity
 				this.refs[dest] = 'e'
 				this.commands.append(assign_entity(expression, dest))
 				# special case: assigning as a summon
 				if expression == select_entity('assign'):
 					this.commands.append(clear_tag('assign'))
-			elif expression.isdigit(): # an integer
-				this.refs[dest] = 'i'
-				this.commands.append(assign_int(expression, dest, this.pack))
-				this.namespace.ints.add(dest)
+
 			else: # something else
 				raise Exception('Cannot assign "'+expression+'" to variable at '+this.name)
 
