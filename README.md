@@ -20,11 +20,6 @@ Indentation in EasyDatapacks is always a single tab.
 
 Normally, functions can only be run as-is and don’t accept any parameters. EasyDatapacks allows you to include entities (and integers) as parameters. (note: the “#p” at the end of the parameter is a clarifier. Ignore it for now, it will be explained later on.)
 ```
-def greet(player):
-    tellraw player#p “Hello!”
-```
-Again, the colon and parentheses are all optional. I would recommend the following syntax:
-```
 def greet player:
     tellraw player#p “Hello!”
 ```
@@ -79,7 +74,6 @@ def example:
     if block 0 0 0 coal_ore:
         tellraw @p “Coal ore :(”
 ```
-As usual, the colon is always optional.
 
 ## If-Else
 
