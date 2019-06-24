@@ -61,6 +61,7 @@ class Function:
 		this.infunc = infunc
 		this.inloop = inloop
 		this.hasbreak = False
+		this.hascontinue = False
 
 	def __str__(this):
 
@@ -170,7 +171,7 @@ class Function:
 
 		funcpath = this.function_path(tokens[0].strip())
 
-		if this.hasbreak:
+		if this.hasbreak or this.hascontinue:
 			return
 
 		# creating a new assignment
@@ -269,7 +270,9 @@ class Function:
 			this.commands.append(call)
 			this.functions[funcname].loopcall(funcname, call)
 			if this.functions[funcname].hasbreak:
-				this.commands.append('kill @e[tag='+funcname+'.BREAK]')
+				this.commands.append('kill @e[type=armor_stand,tag='+funcname+'.BREAK]')
+			if this.functions[funcname].hascontinue:
+				this.commands.append('kill @e[type=armor_stand,tag='+funcname+'.CONTINUE]')
 
 		# break
 		elif tokens[0].strip() == 'break':
@@ -278,6 +281,14 @@ class Function:
 			
 			this.hasbreak = True
 			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Tags:["'+'.'.join(this.inloop)+'.BREAK"]}')
+
+		# continue
+		elif tokens[0].strip() == 'continue':
+			if this.inloop == None:
+				raise Exception('"continue" outside of loop at '+this.name)
+			
+			this.hascontinue = True
+			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Tags:["'+'.'.join(this.inloop)+'.CONTINUE"]}')
 
 		# vanilla command
 		elif this.infunc == None:
@@ -355,18 +366,55 @@ class Function:
 
 	def check_break(this, funcname):
 
-		if this.functions[funcname].hasbreak and this.inloop != None:
-			fork = this.fork_function('b')
-			this.hasbreak = True
+		func = this.functions[funcname]
 
-			if fork in this.functions and len(this.functions[fork].commands) > 0 :
-				this.commands.append('execute unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] run '+this.call_function(fork))
+		if this.inloop != None and (func.hasbreak or func.hascontinue):
+
+			fork = this.fork_function('b')
+			call = 'execute '
+
+			if func.hasbreak:
+				this.hasbreak = True
+				call += 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] '
+
+			if func.hascontinue:
+				this.hascontinue = True
+				call += 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] '
+
+			if fork in this.functions and len(this.functions[fork].commands) > 0:
+				call += 'run '+this.call_function(fork)
+				this.commands.append(call)
+
+			if this.functions[fork].hasbreak:
+				this.hasbreak = True
+			if this.functions[fork].hascontinue:
+				this.hascontinue = True
 
 	def loopcall(this, funcname, call):
 		
 		func = this.functions[funcname]
 		while func.commands[-1][-2] == 'b':
-			funcname = 'main.'+func.commands[-1].split(':')[-1]
-			func = this.functions[funcname]
+			newname = 'main.'+func.commands[-1].split(':')[-1]
+			func = this.functions[newname]
 
-		func.commands.append('execute unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] run '+call)
+		newcall = call
+
+		if func.hasbreak or func.hascontinue:
+
+			if func.hasbreak:
+				newcall = 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] run '+newcall
+
+			if func.hascontinue:
+				newcall = 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] run '+newcall
+
+			newcall = 'execute '+newcall
+
+		func.commands.append(newcall)
+
+		if func.hascontinue:
+
+			cmd = 'kill @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE]'
+			this.functions[funcname].commands.insert(0, cmd)
+			
+			cmd = 'execute if entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] run '+call
+			this.functions[funcname].commands.append(cmd)
