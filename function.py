@@ -20,7 +20,7 @@ class Namespace:
 				# pre-processing
 				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
 
-				Function(['main'], {}, lines, this, 0, 0).compile()
+				Function(['main'], {}, lines, this, 0, 0, None, None).compile()
 
 		unused = []
 		# prune unused functions
@@ -39,7 +39,7 @@ class Namespace:
 
 class Function:
 
-	def __init__(this, path, params, lines, namespace, start, expecteddepth):
+	def __init__(this, path, params, lines, namespace, start, expecteddepth, infunc, inloop):
 
 		this.commands = []
 		this.path = path
@@ -57,8 +57,19 @@ class Function:
 		this.pastline = ''
 		this.used = False
 
+		# stuff with break/return
+		this.infunc = infunc
+		this.inloop = inloop
+		this.hasbreak = False
+
 	def __str__(this):
-		return this.name[5:]+': '+str(this.params)+'\n\n\t'+'\n\t'.join(this.commands)+'\n'
+
+		out = this.name[5:]+': '
+		out += str(this.params)
+		out += ' ('+str('.'.join(this.infunc[1:]))+')'
+		out += ' ('+str('.'.join(this.inloop[1:]))+')' if this.inloop != None else ' ()'
+		out += '\n\n\t'+'\n\t'.join(this.commands)+'\n'
+		return out
 
 	def reference_path(this, tail):
 
@@ -103,7 +114,7 @@ class Function:
 						funcparams[token] = 'e'
 				if '.'.join(funcpath) in this.functions:
 					raise Exception('Duplicate function "'+funcpath[-1]+'" in '+this.name)
-				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1, depth+1)
+				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1, depth+1, funcpath, None)
 				this.functions['.'.join(funcpath)].used = True
 
 		# process lines
@@ -159,6 +170,9 @@ class Function:
 
 		funcpath = this.function_path(tokens[0].strip())
 
+		if this.hasbreak:
+			return
+
 		# creating a new assignment
 		if len(tokens) > 1 and tokens[1].strip() == '=':
 
@@ -205,6 +219,7 @@ class Function:
 					raise Exception('Not enough paramaters for function "'+tokens[0]+'" at '+this.name)
 				if func.params[p] == 'e': # an entity
 					this.commands.append(assign_entity(expression, func.name+'.'+p))
+
 			this.commands.append(this.call_function(funcpath))
 
 		# implicit execute
@@ -214,6 +229,7 @@ class Function:
 			funcname = this.fork_function('e')
 			# setup execution call
 			this.commands.append('execute '+this.process_tokens(tokens)+' run '+this.call_function(funcname))
+			this.check_break(funcname)
 
 		# if/else
 		elif tokens[0].strip() == 'else':
@@ -238,6 +254,7 @@ class Function:
 			# setup execution call
 			for i in xrange(count):
 				this.commands.append(this.call_function(funcname))
+			this.check_break(funcname)
 
 		# while loop
 		elif tokens[0].strip() in ('while', 'whilenot'):
@@ -250,9 +267,21 @@ class Function:
 			else:
 				call = 'execute unless '+this.process_tokens(tokens[1:])+' run '+this.call_function(funcname, True)
 			this.commands.append(call)
-			this.functions[funcname].commands.append(call)
+			this.functions[funcname].loopcall(funcname, call)
+			if this.functions[funcname].hasbreak:
+				this.commands.append('kill @e[tag='+funcname+'.BREAK]')
+
+		# break
+		elif tokens[0].strip() == 'break':
+			if this.inloop == None:
+				raise Exception('"break" outside of loop at '+this.name)
+			
+			this.hasbreak = True
+			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Tags:["'+'.'.join(this.inloop)+'.BREAK"]}')
 
 		# vanilla command
+		elif this.infunc == None:
+			raise Exception('Vanilla command outside of a function. This is not allowed, consider putting it inside the load function.')
 		else:
 			this.commands.append(this.process_tokens(tokens))
 
@@ -284,10 +313,32 @@ class Function:
 	def fork_function(this, code):
 
 		# generate inner content as function
+		inloop = this.inloop
+		newpointer = this.pointer+1
+		newdepth = this.expecteddepth+1
+
 		funcpath = this.path+[code+str(this.relcounter)]
+
+		# check if creating new loop
+		if code in ('r', 'w'):
+			inloop = funcpath
+
+		# check if a break
+		if code == 'b':
+			newdepth -= 1
+			while newpointer < len(this.lines) and this.lines[newpointer][0] > this.expecteddepth:
+				newpointer += 1
+			if this.path[-1][0] == 'b':
+				funcpath = this.path[:-1]+['b'+str(int(this.path[-1][1])+1)]
+
 		funcname = '.'.join(funcpath)
-		this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, this.pointer+1, this.expecteddepth+1)
-		this.functions[funcname].compile()
+
+		try:
+			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, newpointer, newdepth, this.infunc, inloop)
+			this.functions[funcname].compile()
+		except SyntaxError as e:
+			if code != 'b': raise e
+
 		this.relcounter += 1
 		return funcname
 
@@ -297,5 +348,25 @@ class Function:
 		if len(func.commands) > 1 or nocollapse:
 			func.used = True
 			return 'function '+this.pack+':'+funcname[5:]
-		else:
+		elif len(func.commands) == 1:
 			return func.commands[0]
+		else:
+			return None
+
+	def check_break(this, funcname):
+
+		if this.functions[funcname].hasbreak and this.inloop != None:
+			fork = this.fork_function('b')
+			this.hasbreak = True
+
+			if fork in this.functions and len(this.functions[fork].commands) > 0 :
+				this.commands.append('execute unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] run '+this.call_function(fork))
+
+	def loopcall(this, funcname, call):
+		
+		func = this.functions[funcname]
+		while func.commands[-1][-2] == 'b':
+			funcname = 'main.'+func.commands[-1].split(':')[-1]
+			func = this.functions[funcname]
+
+		func.commands.append('execute unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] run '+call)
