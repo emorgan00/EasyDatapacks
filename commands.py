@@ -31,3 +31,6 @@ def sub_int(value, var, pack):
 
 def augment_int(var1, var2, op, pack):
 	return 'scoreboard players operation @e[name=%s.VARS] %s %s @e[name=%s.VARS] %s' % (pack, var1, op, pack, var2)
+
+def select_int(var, pack):
+	return '@e[name=%s.VARS] %s' % (pack, var)

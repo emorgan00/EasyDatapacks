@@ -13,11 +13,11 @@ def tokenize(line):
 	buff = ''
 
 	for ch in line:
-		if ch in '=,{}[]():"\'+-\\/':
+		if ch in '=,{}[]():"\'+-*<>%\\/':
 			if len(buff) > 0: tokens.append(buff)
 			tokens.append(ch)
 			buff = ''
-		elif ch == ' ':
+		elif ch in ' 0123456789':
 			buff += ch
 			if len(buff) > 0: tokens.append(buff)
 			buff = ''

@@ -190,8 +190,8 @@ class Function:
 				else:
 					out = select_entity(path)
 				return out+(' ' if expression[-1] == ' ' else '')
-			else: # something else
-				pass
+			elif this.refs[path] == 'i': # integer variable
+				return select_int(path, this.pack)
 
 		# a simple constant
 		return expression
@@ -241,15 +241,23 @@ class Function:
 				raise Exception('Cannot assign "'+expression+'" to variable at '+this.name)
 
 		# augmented assignment
-		elif len(tokens) > 2 and (tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '>')):
+		elif len(tokens) > 2 and (tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '><')):
 
 			var = tokens[0].strip()
 
 			if tokens[1] in ('+', '-', '/', '*', '%'):
 				op = tokens[1]+tokens[2]
 				expression = (''.join(tokens[3:])).strip()
+			elif tokens[1] == '>':
+				if tokens[2] == '<':
+					op = tokens[1]+tokens[2]
+					expression = (''.join(tokens[3:])).strip()
+				else:
+					op = tokens[1].strip()
+					expression = (''.join(tokens[2:])).strip()
+
 			else:
-				op = tokens[1]
+				op = tokens[1].strip()
 				expression = (''.join(tokens[2:])).strip()
 
 			if len(tokens) == 2:
@@ -369,7 +377,6 @@ class Function:
 			raise Exception('The /function command is no longer used. Just type your function as if it were a command. (at '+this.name+')')
 		
 		else:
-			print tokens
 			this.commands.append(this.process_tokens(tokens))
 
 		this.pastline = line
