@@ -1,5 +1,5 @@
 from reader import *
-from entity import *
+from commands import *
 
 class Namespace:
 
@@ -10,6 +10,15 @@ class Namespace:
 		this.functions = {}
 		this.refs = {}
 
+		# for integer variables
+		this.consts = []
+		this.ints = set()
+
+	def add_constant(this, value):
+
+		this.consts.append(value)
+		return 'CONSTANT.'+str(len(this.consts)-1)
+
 	def compile(this, verbose):
 
 		for file in this.files:
@@ -17,7 +26,7 @@ class Namespace:
 				name = file.split('/')[-1].split('\\')[-1].split('.')[0]
 				lines = f.readlines()
 
-				# pre-processing
+				# pre-processing empty lines and comments
 				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
 
 				Function(['main'], {}, lines, this, 0, 0, None, None).compile()
@@ -31,6 +40,24 @@ class Namespace:
 			this.functions.pop(f)
 			if verbose:
 				print('collapsed branch '+f)
+
+		# handle scoreboard variables
+		if len(this.ints) > 0:
+			if not 'main.load' in this.functions:
+				print('automatically creating missing load function...')
+				this.functions['main.load'] = Function(['main', 'load'], {}, [], this, 0, 0, ['main', 'load'], None)
+
+			load = this.functions['main.load']
+			commands = []
+
+			for ref in this.ints:
+				commands.append('scoreboard objectives add '+ref+' dummy')
+
+			# handle constants
+			for i, val in enumerate(this.consts):
+				commands.append(assign_int(val, 'CONSTANT.'+str(i), this.pack))
+
+			load.commands = commands+load.commands
 
 		if verbose:
 			print('')
@@ -206,8 +233,48 @@ class Function:
 				# special case: assigning as a summon
 				if expression == select_entity('assign'):
 					this.commands.append(clear_tag('assign'))
+			elif expression.isdigit(): # an integer
+				this.refs[dest] = 'i'
+				this.commands.append(assign_int(expression, dest, this.pack))
+				this.namespace.ints.add(dest)
 			else: # something else
-				raise Exception('Invalid assignment: cannot assign "'+expression+'" to variable at '+this.name)
+				raise Exception('Cannot assign "'+expression+'" to variable at '+this.name)
+
+		# augmented assignment
+		elif len(tokens) > 2 and (tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '>')):
+
+			var = tokens[0].strip()
+
+			if tokens[1] in ('+', '-', '/', '*', '%'):
+				op = tokens[1]+tokens[2]
+				expression = (''.join(tokens[3:])).strip()
+			else:
+				op = tokens[1]
+				expression = (''.join(tokens[2:])).strip()
+
+			if len(tokens) == 2:
+				raise Exception('Expected something after "'+op+'" at '+this.name)
+
+			dest = this.reference_path(var)
+			if dest == None or this.refs[dest] != 'i':
+				raise Exception('Cannot perform augmented assignment on "'+var+'" at '+this.name)
+			
+			inref = this.reference_path(expression)
+			if inref == None and expression.isdigit(): # int constant
+				if op == '+=':
+					this.commands.append(add_int(expression, dest, this.pack))
+				elif op == '-=':
+					this.commands.append(sub_int(expression, dest, this.pack))
+				else:
+					var2 = this.namespace.add_constant(expression)
+					this.commands.append(augment_int(dest, var2, op, this.pack))
+
+			elif inref == None or this.refs[inref] != 'i':
+				raise Exception('Cannot perform augmented assignment with "'+expression+'" at '+this.name)
+
+			# valid variable
+			else:
+				this.commands.append(augment_int(dest, inref, op, this.pack))
 
 		# definining a new function
 		elif tokens[0].strip() == 'def':
@@ -285,7 +352,7 @@ class Function:
 				raise Exception('"break" outside of loop at '+this.name)
 			
 			this.hasbreak = True
-			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Tags:["'+'.'.join(this.inloop)+'.BREAK"]}')
+			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.BREAK"]}')
 
 		# continue
 		elif tokens[0].strip() == 'continue':
@@ -293,14 +360,16 @@ class Function:
 				raise Exception('"continue" outside of loop at '+this.name)
 			
 			this.hascontinue = True
-			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Tags:["'+'.'.join(this.inloop)+'.CONTINUE"]}')
+			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.CONTINUE"]}')
 
 		# vanilla command
 		elif this.infunc == None:
 			raise Exception('Vanilla command outside of a function. This is not allowed, consider putting it inside the load function.')
 		elif tokens[0].strip() == 'function':
 			raise Exception('The /function command is no longer used. Just type your function as if it were a command. (at '+this.name+')')
+		
 		else:
+			print tokens
 			this.commands.append(this.process_tokens(tokens))
 
 		this.pastline = line

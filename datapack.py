@@ -23,11 +23,11 @@ def compile(destination, files, verbose = False, nofiles = False):
 	packname = destination.split('/')[-1].split('\\')[-1]
 
 	namespace = Namespace(packname, files)
-	try:
-		namespace.compile(verbose)
-	except Exception as e:
-		print '(error) '+str(e)
-		return False
+	# try:
+	namespace.compile(verbose)
+	# except Exception as e:
+	# 	print '(error) '+str(e)
+	# 	return False
 
 	if nofiles:
 		return False
@@ -48,8 +48,8 @@ def compile(destination, files, verbose = False, nofiles = False):
 	# load
 	with open(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions', 'load.json'), 'w') as f:
 		for func in namespace.functions:
-			if len(func) > 4 and func[-5:] == '.load':
-				f.write(LOADTICK % ('"'+packname+':'+func[5:]+'"'))
+			if func == 'main.load':
+				f.write(LOADTICK % ('"'+packname+':load"'))
 				break
 		else:
 			f.write(LOADTICK % "")
@@ -57,8 +57,8 @@ def compile(destination, files, verbose = False, nofiles = False):
 	# tick
 	with open(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions', 'tick.json'), 'w') as f:
 		for func in namespace.functions:
-			if len(func) > 4 and func[-5:] == '.tick':
-				f.write(LOADTICK % ('"'+packname+':'+func[5:]+'"'))
+			if func == 'main.tick':
+				f.write(LOADTICK % ('"'+packname+':tick"'))
 				break
 		else:
 			f.write(LOADTICK % "")
