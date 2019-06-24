@@ -140,7 +140,7 @@ class Function:
 
 				tokens = tokenize(p[1])
 				funcpath = this.path+[tokens[1].strip()]
-				if not all(c.isalnum() or c in '_' for c in funcpath):
+				if not all(c.isalnum() or c in '_ ' for c in tokens[1]):
 					raise Exception('Invalid function name: "'+tokens[1].strip()+'"')
 
 				funcparams = {}
