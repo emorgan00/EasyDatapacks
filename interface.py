@@ -21,16 +21,16 @@ if __name__ == '__main__':
 			nofiles = True
 			verbose = True
 		elif param[-3:] == '.py':
-			print 'ignoring .py file as parameter'
+			print('ignoring .py file as parameter')
 		else:
 			params.append(param)
 
 	if len(params) < 2:
-		print 'error: not enough parameters were supplied'
-		print USAGE
+		print('error: not enough parameters were supplied')
+		print(USAGE)
 		sys.exit()
 
 	datapack.compile(params[0], params[1:], verbose, nofiles)
 
 	if not nofiles:
-		print 'successfully created datapack "'+params[0].split('/')[-1].split('\\')[-1]+'"'
+		print('successfully created datapack "'+params[0].split('/')[-1].split('\\')[-1]+'"')
