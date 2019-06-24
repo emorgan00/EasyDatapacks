@@ -411,7 +411,7 @@ class Function:
 
 		func.commands.append(newcall)
 
-		if func.hascontinue:
+		if this.functions[funcname].hascontinue:
 
 			cmd = 'kill @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE]'
 			this.functions[funcname].commands.insert(0, cmd)
