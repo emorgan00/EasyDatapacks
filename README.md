@@ -425,8 +425,8 @@ datapack.compile(destination, files, verbose, nofiles)
 
 Here are a few examples of fully working datapacks written with EasyDatapacks. (These were basically thrown together by me, so don’t expect too much in terms of quality)
 
-[hookshot](https://drive.google.com/uc?export=download&id=1hm0vh0N5gg0uQL5E7kludL91BzkHWFfM)
+[hookshot](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/hookshot.mcf)
 (this will implement a Zelda-like hookshot)
 
-[movingblocks](https://drive.google.com/uc?export=download&id=17TYq3j28m2pqTuK1PMJfxPrSJZn2qFbS)
+[movingblocks](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/movingblocks.mcf)
 (this will implement moving blocks which can be pushed along the grid, and slide on ice)
