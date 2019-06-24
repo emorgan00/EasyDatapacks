@@ -1,95 +1,49 @@
-from reader import *
-from commands import *
-
-class Namespace:
-
-	def __init__(this, pack, files):
-
-		this.pack = pack
-		this.files = files
-		this.functions = {}
-		this.refs = {}
-
-		# for integer variables
-		this.consts = []
-		this.ints = set()
-
-	def add_constant(this, value):
-
-		this.consts.append(value)
-		return 'CONSTANT.'+str(len(this.consts)-1)
-
-	def compile(this, verbose):
-
-		for file in this.files:
-			with open(file, 'r') as f:
-				name = file.split('/')[-1].split('\\')[-1].split('.')[0]
-				lines = f.readlines()
-
-				# pre-processing empty lines and comments
-				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
-
-				Function(['main'], {}, lines, this, 0, 0, None, None).compile()
-
-		unused = []
-		# prune unused functions
-		for f in this.functions:
-			if not this.functions[f].used:
-				unused.append(f)
-		for f in unused:
-			this.functions.pop(f)
-			if verbose:
-				print('collapsed branch '+f)
-
-		# handle scoreboard variables
-		if len(this.ints) > 0:
-			if not 'main.load' in this.functions:
-				print('automatically creating missing load function...')
-				this.functions['main.load'] = Function(['main', 'load'], {}, [], this, 0, 0, ['main', 'load'], None)
-
-			load = this.functions['main.load']
-			commands = []
-
-			commands.append(summon_vars(this.pack))
-
-			for ref in this.ints:
-				commands.append('scoreboard objectives add '+ref+' dummy')
-
-			# handle constants
-			for i, val in enumerate(this.consts):
-				commands.append('scoreboard objectives add CONSTANT.'+str(i)+' dummy')
-				commands.append(assign_int(val, 'CONSTANT.'+str(i), this.pack))
-
-			load.commands = commands+load.commands
-
-		if verbose:
-			print('')
-			for f in this.functions:
-				print(this.functions[f])
+from namespace import *
 
 class Function:
 
 	def __init__(this, path, params, lines, namespace, start, expecteddepth, infunc, inloop):
 
+		# master list of all generated vanilla commands in the function
 		this.commands = []
+
+		# path to this function, e.g. ['main', 'load'] refers to the main.load function
 		this.path = path
 		this.name = '.'.join(path)
+
 		this.namespace = namespace
 		this.functions = namespace.functions
+
 		this.refs = namespace.refs
 		this.pack = namespace.pack
+
+		# the parameters supplied to this function, follows the same format as refs
 		this.params = params
+
+		# the raw user input. an element of the list is in the format (tab-depth, str-content)
 		this.lines = lines
+
+		# stores the current line we are parsing
 		this.pointer = start
+
+		# stores the reference name of all variables declared locally in this function.
 		this.locals = []
+
+		# stores the expected indentation depth of this function when compiling. Used to ensure correct indentation.
 		this.expecteddepth = expecteddepth
+
+		# stores the number of times this function has forked to another function. Used to ensure unique function names.
 		this.relcounter = 0
+
+		# stores the content of the line before the one we are currently parsing. Currently only used for if-else logic.
 		this.pastline = ''
+
+		# this will get set to true when this function is called by another function. Unused functions will get "collapsed".
 		this.used = False
 
 		# stuff with break/return
-		this.infunc = infunc
-		this.inloop = inloop
+		this.infunc = infunc # stores the fuser-defined which this function is a member of
+		this.inloop = inloop # stores the loop (while/whilenot) which this function is most immediately a member of
 		this.hasbreak = False
 		this.hascontinue = False
 
@@ -102,18 +56,20 @@ class Function:
 		out += '\n\n\t'+'\n\t'.join(this.commands)+'\n'
 		return out
 
-	def reference_path(this, tail):
+	# Return the path to a variable with name <var>. It will search starting with the current function, and then check upwards to parent functions.
+	def reference_path(this, var):
 
 		for i in range(len(this.path), 0, -1):
-			test_path = '.'.join(this.path[:i])+'.'+tail
+			test_path = '.'.join(this.path[:i])+'.'+var
 			if test_path in this.refs:
 				return test_path
 		return None
 
-	def function_path(this, tail):
+	# Return the path to a function with name <var>. Works the same way as reference_path.
+	def function_path(this, var):
 
 		for i in range(len(this.path), 0, -1):
-			test_path = '.'.join(this.path[:i])+'.'+tail
+			test_path = '.'.join(this.path[:i])+'.'+var
 			if test_path in this.functions:
 				return test_path
 		return None
@@ -185,6 +141,7 @@ class Function:
 
 			this.refs.pop(ref)
 
+	# called on a single token. Detects references and handles clarifiers. For multi-token strings, use process_tokens.
 	def process_expression(this, expression):
 
 		components = expression.strip().split('#')
@@ -214,6 +171,7 @@ class Function:
 		# a simple constant
 		return expression
 
+	# processes the current line.
 	def process_line(this):
 
 		if this.hasbreak or this.hascontinue:
@@ -267,7 +225,7 @@ class Function:
 			else: # something else
 				raise Exception('Cannot assign "'+expression+'" to variable at '+this.name)
 
-		# augmented assignment
+		# augmented assignment (for integers)
 		elif len(tokens) > 2 and (tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '><')):
 
 			var = tokens[0].strip()
@@ -415,6 +373,9 @@ class Function:
 
 		this.pastline = line
 
+	# called on a set of tokens, intended to evaluate to a single string which represents some value which can be inserted into vanilla commands.
+	# this can be an entity, integer, or series of vanilla commands (or components thereof)
+	# will handle references as part of an expression.
 	def process_tokens(this, tokens, augsummon = False, conditional = False):
 
 		args = broad_tokenize(''.join(tokens).strip())
@@ -459,6 +420,12 @@ class Function:
 
 		return (''.join(tokens)).strip()
 
+	# <code> refers to the type of function. These are the same codes as are used in function path/file names.
+	# 'w' = while loop body
+	# 'e' = implicit execution
+	# 'r' = repeat loop body
+	# 'b' = chained continue/break-check function
+	# returns the name of the function which was generated
 	def fork_function(this, code):
 
 		# generate inner content as function
@@ -486,6 +453,7 @@ class Function:
 			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, newpointer, newdepth, this.infunc, inloop)
 			this.functions[funcname].compile()
 		except SyntaxError as e:
+			# gonna be honest here, I barely remember writing this and it seems like black magic to me. But it works perfectly.
 			if code != 'b': raise e
 
 		this.relcounter += 1
