@@ -107,14 +107,19 @@ class Function:
 			if p[0] < depth: break
 			if p[0] > depth: continue
 			if p[1][:3] == 'def':
+
 				tokens = tokenize(p[1])
 				funcpath = this.path+[tokens[1].strip()]
+				if not all(c.isalnum() or c in '_' for c in funcpath):
+					raise Exception('Invalid function name: "'+tokens[1].strip()+'"')
+
 				funcparams = {}
 				for token in tokens[2:]:
 					if all(c.isalnum() or c in '_' for c in token):
 						funcparams[token] = 'e'
 				if '.'.join(funcpath) in this.functions:
 					raise Exception('Duplicate function "'+funcpath[-1]+'" in '+this.name)
+
 				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1, depth+1, funcpath, None)
 				this.functions['.'.join(funcpath)].used = True
 
@@ -166,13 +171,13 @@ class Function:
 
 	def process_line(this):
 
+		if this.hasbreak or this.hascontinue:
+			return
+
 		line = this.lines[this.pointer][1]
 		tokens = tokenize(line)
 
 		funcpath = this.function_path(tokens[0].strip())
-
-		if this.hasbreak or this.hascontinue:
-			return
 
 		# creating a new assignment
 		if len(tokens) > 1 and tokens[1].strip() == '=':
@@ -268,7 +273,7 @@ class Function:
 			else:
 				call = 'execute unless '+this.process_tokens(tokens[1:])+' run '+this.call_function(funcname, True)
 			this.commands.append(call)
-			this.functions[funcname].loopcall(funcname, call)
+			this.functions[funcname].call_loop(funcname, call)
 			if this.functions[funcname].hasbreak:
 				this.commands.append('kill @e[type=armor_stand,tag='+funcname+'.BREAK]')
 			if this.functions[funcname].hascontinue:
@@ -321,7 +326,8 @@ class Function:
 				tokens[i+1] = ','+tokens[i+1][1:]
 				token = token[:-1]
 			tokens[i] = token
-		return ''.join(tokens)
+
+		return (''.join(tokens)).strip()
 
 	def fork_function(this, code):
 
@@ -392,7 +398,7 @@ class Function:
 			if this.functions[fork].hascontinue:
 				this.hascontinue = True
 
-	def loopcall(this, funcname, call):
+	def call_loop(this, funcname, call):
 		
 		func = this.functions[funcname]
 		while func.commands[-1][-2] == 'b':
