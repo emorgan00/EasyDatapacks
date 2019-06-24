@@ -409,7 +409,6 @@ class Function:
 			return select_entity('assign')
 
 		# special case: conditional
-
 		if conditional and len(args) > 2:
 			for i in range(1, len(args)-1):
 				print args, i
@@ -471,6 +470,7 @@ class Function:
 		this.relcounter += 1
 		return funcname
 
+	# this will call a sub-function of name <funcname>. <nocollapse> will disable collapsing a 1-line function
 	def call_function(this, funcname, nocollapse = False):
 
 		func = this.functions[funcname]
@@ -478,10 +478,13 @@ class Function:
 			func.used = True
 			return 'function '+this.pack+':'+funcname[5:]
 		elif len(func.commands) == 1:
+			# if a function is only 1 command, just execute it directly.
 			return func.commands[0]
 		else:
 			return None
 
+	# this is called after spawning a forked function. It checks if the function has a break/continue,
+	# and will branch the current function accordingly.
 	def check_break(this, funcname):
 
 		func = this.functions[funcname]
@@ -499,15 +502,18 @@ class Function:
 				this.hascontinue = True
 				call += 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] '
 
+			# if fork isn't in this.functions, then it was collapsed and we don't have to worry about it.
 			if fork in this.functions and len(this.functions[fork].commands) > 0:
 				call += 'run '+this.call_function(fork)
 				this.commands.append(call)
 
+			# breaks should always propagate backwards through a b-function chain.
 			if this.functions[fork].hasbreak:
 				this.hasbreak = True
 			if this.functions[fork].hascontinue:
 				this.hascontinue = True
 
+	# this is called by a loop's parent function to set up that loop's self-call
 	def call_loop(this, funcname, call):
 		
 		func = this.functions[funcname]
@@ -515,8 +521,10 @@ class Function:
 			newname = 'main.'+func.commands[-1].split(':')[-1]
 			func = this.functions[newname]
 
+		# <call> should be a call directly to the outermost loop function
 		newcall = call
 
+		# if the loop has a break/continue, we need to ensure it hasn't been called before looping again
 		if func.hasbreak or func.hascontinue:
 
 			if func.hasbreak:
@@ -529,6 +537,7 @@ class Function:
 
 		func.commands.append(newcall)
 
+		# if the loop has a continue, we need to reset it to the beginning if we reach the end and continue has been called
 		if this.functions[funcname].hascontinue:
 
 			cmd = 'kill @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE]'
