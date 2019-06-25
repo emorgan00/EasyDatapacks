@@ -166,7 +166,7 @@ class Function:
 				return out+(' ' if expression[-1] == ' ' else '')
 
 			elif this.refs[path] == 'i': # integer variable
-				return select_int(path, this.pack)
+				return select_int(path, this.pack)+(' ' if expression[-1] == ' ' else '')
 
 		# a simple constant
 		return expression
@@ -417,7 +417,7 @@ class Function:
 			refpath = this.reference_path(token.split('#')[0])
 			token = this.process_expression(token)
 			# narrowing
-			if refpath != None and token[0] == '@' and i != len(tokens)-1 and tokens[i+1][0] == '[':
+			if refpath != None and token[0] == '@' and i != len(tokens)-1 and tokens[i+1][0] == '[' and tokens[i][-1] != ' ':
 				tokens[i+1] = ','+tokens[i+1][1:]
 				token = token[:-1]
 			tokens[i] = token
