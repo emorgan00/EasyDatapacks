@@ -372,6 +372,18 @@ def example:
 
 Comments in EasyDatapacks work exactly the same as in normal commands. Just put a “#” at the beginning of the line, and everything on that line will be ignored.
 
+## Additional Notes
+
+Currently, any sort of recursion in functions is disallowed due to limitations with data storage in entities. Implementing recursion would introduce a huge amount of complexity to parameter storage, likely leading to immense lag in some cases. In theory, a limited form of recursion could be added without severe drawbacks, but we have opted not to include any recursion as it would likely rarely be used anyway.
+
+Syntactically, one of the most hard-to-get-used-to features introduced by EasyDatapacks is the use of a colon before an indented statement. Because of this, although the use of these colons, especially after "def" statements, is highly recommended for consistency and readability, the following code is completely valid and will be successfully compiled:
+```
+def function var
+    as var
+        say Hello
+```
+Again, some users may find it easier to omit colons for implicit execute statements (such as "as var" above), but this is not considered part of the formal syntax protocol for EasyDatapacks.
+
 # Compiling
 
 EasyDatapacks uses a compiler written in python. The file which you create will be compiled into a set of .json, .mcmeta, and .mcfunction files, which together form a complete datapack. All you need to provide is the destination folder where you want your datapack to reside, and the path to the file(s) which contain the source code for your datapack.

@@ -276,6 +276,10 @@ class Function:
 
 		# calling a custom function
 		elif funcpath != None:
+
+			if funcpath == '.'.join(this.infunc):
+				raise Exception('Attempt at recursing in function '+'.'.join(this.infunc)+', this is not supported.')
+
 			func = this.functions[funcpath]
 			funcparams = broad_tokenize(''.join(tokens[1:]))
 			for i, p in enumerate(func.params):
@@ -470,7 +474,8 @@ class Function:
 			# if a function is only 1 command, just execute it directly.
 			return func.commands[0]
 		else:
-			return None
+			func.used = True
+			return 'function '+this.pack+':'+funcname[5:]
 
 	# this is called after spawning a forked function. It checks if the function has a break/continue,
 	# and will branch the current function accordingly.
