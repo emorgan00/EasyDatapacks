@@ -34,7 +34,8 @@ def broad_tokenize(line):
 	tokens = line.split(' ')
 
 	for token in tokens:
-		stack.append(token)
+		if len(token) > 0:
+			stack.append(token)
 
 	return stack
 

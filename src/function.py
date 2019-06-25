@@ -281,10 +281,10 @@ class Function:
 				raise Exception('Attempt at recursing in function '+'.'.join(this.infunc)+', this is not supported.')
 
 			func = this.functions[funcpath]
-			funcparams = broad_tokenize(''.join(tokens[1:]))
+			givenparams = broad_tokenize(''.join(tokens[1:]))
 			for i, p in enumerate(func.params):
 				try:
-					expression = this.process_expression(funcparams[i]).strip()
+					expression = this.process_expression(givenparams[i]).strip()
 				except IndexError:
 					raise Exception('Not enough paramaters for function "'+tokens[0].strip()+'" at '+this.name)
 
@@ -295,7 +295,7 @@ class Function:
 					if expression.isdigit(): # constant int
 						this.commands.append(assign_int(expression, func.name+'.'+p, this.pack))
 					elif expression[0] == '@': # reference to int
-						this.commands.append(augment_int(func.name+'.'+p, this.reference_path(funcparams[i]), '=', this.pack))
+						this.commands.append(augment_int(func.name+'.'+p, this.reference_path(givenparams[i]), '=', this.pack))
 
 			this.commands.append(this.call_function(funcpath))
 
