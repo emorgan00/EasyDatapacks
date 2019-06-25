@@ -368,6 +368,25 @@ def example:
     greet_n_times @r 10
 ```
 
+## Parameters as JSON components
+
+Suppose you want a function which takes a player as input, and then prints that player's name to the chat. Vanilla commands allow you to convert entity names and scores to test as part of a JSON array, which is what we will need to use to make this work. However, unlike a command parameter, entity selectors appear in JSON as text. Thankfully, EasyDatapacks will also parse any JSON inputs in your program and detect variables or parameters, incorporating them accordingly.
+
+Here is how the above example could be written:
+```
+def say_my_name someplayer:
+    tellraw @a [{"text": "Hi, my name is "}, {"selector":"someplayer"}]
+
+def example:
+    say_my_name @p
+```
+The "someplayer" parameter will be detected and the function will print the input's name as desired. This also works for variables:
+```
+def example:
+    someplayer = @r
+    tellraw @a [{"text": "Hi, my name is "}, {"selector":"someplayer"}]
+```
+
 ## Comments
 
 Comments in EasyDatapacks work exactly the same as in normal commands. Just put a “#” at the beginning of the line, and everything on that line will be ignored.
@@ -383,6 +402,14 @@ def function var
         say Hello
 ```
 Again, some users may find it easier to omit colons for implicit execute statements (such as "as var" above), but this is not considered part of the formal syntax protocol for EasyDatapacks.
+
+When using parameters or variables as selectors in a JSON array, please be wary that including a variable name as part of a piece of normal text may produce uninteded results. For example, the following function:
+```
+def say_my_name player:
+    tellraw @a [{"text":"I am a player, and my name is "},{"selector":"player"}]
+```
+The "player" variable will be detected twice, although the first one is unintentional. The output will end up looking something like this:
+`I am a @e[...some random stuff...], and my name is emorgan00`
 
 # Compiling
 
