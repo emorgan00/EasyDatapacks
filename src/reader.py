@@ -1,12 +1,3 @@
-class Token:
-
-	def __init__(this, tstr, ttype):
-		this.str = tstr
-		this.type = ttype
-
-	def __str__(this):
-		return this.str
-
 # return a list of all the individual tokens in a string.
 def tokenize(line):
 	tokens = []
