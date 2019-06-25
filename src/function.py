@@ -1,4 +1,5 @@
 from namespace import *
+import validate
 
 class Function:
 
@@ -20,7 +21,7 @@ class Function:
 		# the parameters supplied to this function, follows the same format as refs
 		this.params = params
 
-		# the raw user input. an element of the list is in the format (tab-depth, str-content)
+		# the raw user input. an element of the list is in the format (tab-depth, str-content, line-number)
 		this.lines = lines
 
 		# stores the current line we are parsing
@@ -74,14 +75,34 @@ class Function:
 				return test_path
 		return None
 
+	# will create an exception with line number and function name
+	def raise_exception(this, string, syntaxerror = False):
+
+		out = 'Error at line %i: ' % this.lines[this.pointer][2]
+		out += '"%s"\n\t' % this.lines[this.pointer][1]
+		out += string
+
+		if syntaxerror:
+			raise SyntaxError(out)
+		else:
+			raise Exception(out)
+
+	# adds the command to this function.
+	def add_command(this, command):
+
+		if not validate.check(command):
+			out = 'An invalid command was generated: "%s".\n\t' % command
+			this.raise_exception(out)
+		this.commands.append(command)
+
 	def compile(this):
 
 		try:
 			depth = this.lines[this.pointer][0]
 		except:
-			raise SyntaxError('Expected content at '+this.name+', nothing found')
+			this.raise_exception('Expected content, nothing found.', True)
 		if depth != this.expecteddepth:
-			raise SyntaxError('Incorrect indentation at '+this.name)
+			this.raise_exception('Incorrect indentation.', True)
 
 		# pre-process params into local variables
 		for p in this.params:
@@ -100,7 +121,7 @@ class Function:
 				tokens = tokenize(p[1])
 				funcpath = this.path+[tokens[1].strip()]
 				if not valid_name(tokens[1].strip()):
-					raise Exception('Invalid function name: "'+tokens[1].strip()+'"')
+					this.raise_exception('Invalid function name: "'+tokens[1].strip()+'".')
 
 				funcparams = {}
 				for token in (''.join(tokens[2:])).split(' '):
@@ -113,12 +134,12 @@ class Function:
 						elif param[1] in ('e', 'i'):
 							funcparams[param[0]] = param[1]
 						else:
-							raise Exception('Invalid parameter clarifier: "'+token.strip()+'" for function '+tokens[1].strip())
+							this.raise_exception('Invalid parameter clarifier: "'+token.strip()+'" for function '+tokens[1].strip()+'.')
 					else:
-						raise Exception('Invalid parameter name "'+token.strip()+'" for function '+tokens[1].strip())
+						this.raise_exception('Invalid parameter name "'+token.strip()+'" for function '+tokens[1].strip()+'.')
 
 				if '.'.join(funcpath) in this.functions:
-					raise Exception('Duplicate function "'+funcpath[-1]+'" in '+this.name)
+					this.raise_exception('Duplicate function "'+funcpath[-1]+'"')
 
 				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1, depth+1, funcpath, None)
 				this.functions['.'.join(funcpath)].used = True
@@ -135,7 +156,7 @@ class Function:
 		# dispel locals
 		for ref in this.locals:
 			if this.refs[ref] == 'e': # an entity
-				this.commands.append(clear_tag(ref))
+				this.add_command(clear_tag(ref))
 			else: # something else
 				pass
 
@@ -186,7 +207,7 @@ class Function:
 		if len(tokens) > 1 and tokens[1].strip() == '=':
 
 			if len(tokens) == 2:
-				raise Exception('Expected something after "=" at '+this.name)
+				this.raise_exception('Expected something after "=".')
 			dest = this.reference_path(tokens[0].strip())
 
 			# assigning something for the first time
@@ -197,7 +218,7 @@ class Function:
 			# clearing an old assignment
 			else:
 				if this.refs[dest] == 'e': # an entity
-					this.commands.append(clear_tag(dest))
+					this.add_command(clear_tag(dest))
 				else: # something else
 					pass
 
@@ -207,23 +228,23 @@ class Function:
 
 			if expression.isdigit(): # an integer constant
 				this.refs[dest] = 'i'
-				this.commands.append(assign_int(expression, dest, this.pack))
+				this.add_command(assign_int(expression, dest, this.pack))
 				this.namespace.ints.add(dest)
 
 			elif refpath in this.refs and this.refs[refpath] == 'i': # an integer variable
 				this.refs[dest] = 'i'
-				this.commands.append(augment_int(dest, refpath, '=', this.pack))
+				this.add_command(augment_int(dest, refpath, '=', this.pack))
 				this.namespace.ints.add(dest)
 
 			elif expression[0] == '@': # an entity
 				this.refs[dest] = 'e'
-				this.commands.append(assign_entity(expression, dest))
+				this.add_command(assign_entity(expression, dest))
 				# special case: assigning as a summon
 				if expression == select_entity('assign'):
-					this.commands.append(clear_tag('assign'))
+					this.add_command(clear_tag('assign'))
 
 			else: # something else
-				raise Exception('Cannot assign "'+expression+'" to variable at '+this.name)
+				this.raise_exception('Cannot assign "'+expression+'" to variable.')
 
 		# augmented assignment (for integers)
 		elif len(tokens) > 2 and (tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '><')):
@@ -246,28 +267,28 @@ class Function:
 				expression = (''.join(tokens[2:])).strip()
 
 			if len(tokens) == 2:
-				raise Exception('Expected something after "'+op+'" at '+this.name)
+				this.raise_exception('Expected something after "'+op+'"')
 
 			dest = this.reference_path(var)
 			if dest == None or this.refs[dest] != 'i':
-				raise Exception('Cannot perform augmented assignment on "'+var+'" at '+this.name)
+				this.raise_exception('Cannot perform augmented assignment on "'+var+'"')
 			
 			inref = this.reference_path(expression)
 			if inref == None and expression.isdigit(): # int constant
 				if op == '+=':
-					this.commands.append(add_int(expression, dest, this.pack))
+					this.add_command(add_int(expression, dest, this.pack))
 				elif op == '-=':
-					this.commands.append(sub_int(expression, dest, this.pack))
+					this.add_command(sub_int(expression, dest, this.pack))
 				else:
 					var2 = this.namespace.add_constant(expression)
-					this.commands.append(augment_int(dest, var2, op, this.pack))
+					this.add_command(augment_int(dest, var2, op, this.pack))
 
 			elif inref == None or this.refs[inref] != 'i':
-				raise Exception('Cannot perform augmented assignment with "'+expression+'" at '+this.name)
+				this.raise_exception('Cannot perform augmented assignment with "'+expression+'"')
 
 			# valid variable
 			else:
-				this.commands.append(augment_int(dest, inref, op, this.pack))
+				this.add_command(augment_int(dest, inref, op, this.pack))
 
 		# definining a new function
 		elif tokens[0].strip() == 'def':
@@ -278,26 +299,31 @@ class Function:
 		elif funcpath != None:
 
 			if funcpath == '.'.join(this.infunc):
-				raise Exception('Attempt at recursing in function '+'.'.join(this.infunc)+', this is not supported.')
+				this.raise_exception('Attempt at recursing in function '+'.'.join(this.infunc)+', this is not supported.')
 
 			func = this.functions[funcpath]
 			givenparams = broad_tokenize(''.join(tokens[1:]))
+			if len(givenparams) > len(func.params):
+				this.raise_exception('Too many parameters for function "'+tokens[0].strip()+'".')
+
 			for i, p in enumerate(func.params):
+
+				expression = None
 				try:
 					expression = this.process_expression(givenparams[i]).strip()
 				except IndexError:
-					raise Exception('Not enough paramaters for function "'+tokens[0].strip()+'" at '+this.name)
+					this.raise_exception('Not enough paramaters for function "'+tokens[0].strip()+'".')
 
 				if func.params[p] == 'e': # an entity
-					this.commands.append(assign_entity(expression, func.name+'.'+p))
+					this.add_command(assign_entity(expression, func.name+'.'+p))
 
 				elif func.params[p] == 'i': # in integer
 					if expression.isdigit(): # constant int
-						this.commands.append(assign_int(expression, func.name+'.'+p, this.pack))
+						this.add_command(assign_int(expression, func.name+'.'+p, this.pack))
 					elif expression[0] == '@': # reference to int
-						this.commands.append(augment_int(func.name+'.'+p, this.reference_path(givenparams[i]), '=', this.pack))
+						this.add_command(augment_int(func.name+'.'+p, this.reference_path(givenparams[i]), '=', this.pack))
 
-			this.commands.append(this.call_function(funcpath))
+			this.add_command(this.call_function(funcpath))
 
 		# implicit execute
 		elif tokens[0].strip() in ('as', 'at', 'positioned', 'align', 'facing', 'rotated', 'in', 'anchored', 'if', 'unless', 'store'):
@@ -305,13 +331,13 @@ class Function:
 
 			funcname = this.fork_function('e')
 			# setup execution call
-			this.commands.append('execute '+this.process_tokens(tokens, False, True)+' run '+this.call_function(funcname))
+			this.add_command('execute '+this.process_tokens(tokens, False, True)+' run '+this.call_function(funcname))
 			this.check_break(funcname)
 
 		# if/else
 		elif tokens[0].strip() == 'else':
 			if this.pastline[:3] != 'if ':
-				raise Exception('"else" without matching "if" at '+this.name)
+				this.raise_exception('"else" without matching "if"')
 			this.lines[this.pointer] = (this.lines[this.pointer][0], 'unless'+this.pastline[2:])
 			this.process_line()
 			return
@@ -325,12 +351,12 @@ class Function:
 					count = int(token)
 					break
 			if count == None:
-				raise Exception('"repeat" without a number following it at '+this.name)
+				this.raise_exception('"repeat" without a number following it.')
 
 			funcname = this.fork_function('r')
 			# setup execution call
 			for i in range(count):
-				this.commands.append(this.call_function(funcname))
+				this.add_command(this.call_function(funcname))
 			this.check_break(funcname)
 
 		# while loop
@@ -343,37 +369,37 @@ class Function:
 				call = 'execute if '+this.process_tokens(tokens[1:], False, True)+' run '+this.call_function(funcname, True)
 			else:
 				call = 'execute unless '+this.process_tokens(tokens[1:], False, True)+' run '+this.call_function(funcname, True)
-			this.commands.append(call)
+			this.add_command(call)
 			this.functions[funcname].call_loop(funcname, call)
 			if this.functions[funcname].hasbreak:
-				this.commands.append('kill @e[type=armor_stand,tag='+funcname+'.BREAK]')
+				this.add_command('kill @e[type=armor_stand,tag='+funcname+'.BREAK]')
 			if this.functions[funcname].hascontinue:
-				this.commands.append('kill @e[type=armor_stand,tag='+funcname+'.CONTINUE]')
+				this.add_command('kill @e[type=armor_stand,tag='+funcname+'.CONTINUE]')
 
 		# break
 		elif tokens[0].strip() == 'break':
 			if this.inloop == None:
-				raise Exception('"break" outside of loop at '+this.name)
+				this.raise_exception('"break" outside of loop.')
 			
 			this.hasbreak = True
-			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.BREAK"]}')
+			this.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.BREAK"]}')
 
 		# continue
 		elif tokens[0].strip() == 'continue':
 			if this.inloop == None:
-				raise Exception('"continue" outside of loop at '+this.name)
+				this.raise_exception('"continue" outside of loop.')
 			
 			this.hascontinue = True
-			this.commands.append('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.CONTINUE"]}')
+			this.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.CONTINUE"]}')
 
 		# vanilla command
 		elif this.infunc == None:
-			raise Exception('Vanilla command outside of a function. This is not allowed, consider putting it inside the load function.')
+			this.raise_exception('Vanilla command outside of a function. This is not allowed, consider putting it inside the load function.')
 		elif tokens[0].strip() == 'function':
-			raise Exception('The /function command is no longer used. Just type your function as if it were a command. (at '+this.name+')')
+			this.raise_exception('The /function command is no longer used. Just type your function as if it were a command.')
 		
 		else:
-			this.commands.append(this.process_tokens(tokens))
+			this.add_command(this.process_tokens(tokens))
 
 		this.pastline = line
 
@@ -388,11 +414,11 @@ class Function:
 		if augsummon and args[0] == 'summon':
 			ref = ' '.join(args)
 			if 'Tags:[' in ref:
-				this.commands.append(ref.replace('Tags:[', 'Tags:["assign",'))
+				this.add_command(ref.replace('Tags:[', 'Tags:["assign",'))
 			elif ref[-1] == '}':
-				this.commands.append(ref[:-1]+',Tags:["assign"]}')
+				this.add_command(ref[:-1]+',Tags:["assign"]}')
 			else:
-				this.commands.append(ref+' {Tags:["assign"]}')
+				this.add_command(ref+' {Tags:["assign"]}')
 			return select_entity('assign')
 
 		# special case: conditional
@@ -402,11 +428,11 @@ class Function:
 				if op in ('<', '>', '==', '<=', '>='):
 					var = this.reference_path(args[i-1])
 					if var == None or this.refs[var] != 'i':
-						raise Exception('"'+args[i-1]+'" is not a valid integer variable at '+this.name)
+						this.raise_exception('"'+args[i-1]+'" is not a valid integer variable.')
 					if not args[i+1].isdigit():
-						raise Exception('"'+args[i+1]+'" is not an integer at '+this.name)
+						this.raise_exception('"'+args[i+1]+'" is not an integer at '+this.name)
 					if i > 1 and not args[i-2] in ('if', 'unless', 'while', 'whilenot'):
-						raise Exception('Integer comparison without a conditional at '+this.name)
+						this.raise_exception('Integer comparison without a conditional.')
 					args[i-1] = check_int(var, op, args[i+1], this.pack)
 					args[i] = None
 					args[i+1] = None
@@ -499,7 +525,7 @@ class Function:
 			# if fork isn't in this.functions, then it was collapsed and we don't have to worry about it.
 			if fork in this.functions and len(this.functions[fork].commands) > 0:
 				call += 'run '+this.call_function(fork)
-				this.commands.append(call)
+				this.add_command(call)
 
 			# breaks should always propagate backwards through a b-function chain.
 			if this.functions[fork].hasbreak:

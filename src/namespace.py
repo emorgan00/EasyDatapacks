@@ -31,10 +31,13 @@ class Namespace:
 		for file in this.files:
 			with open(file, 'r') as f:
 				name = file.split('/')[-1].split('\\')[-1].split('.')[0]
-				lines = f.readlines()
+				rawlines = f.readlines()
 
 				# pre-processing empty lines and comments
-				lines = [(tab_depth(line), line.strip()) for line in lines if len(line.strip()) > 0 and line.strip()[0] != '#']
+				lines = []
+				for i, line in enumerate(rawlines):
+					if len(line.strip()) > 0 and line.strip()[0] != '#':
+						lines.append((tab_depth(line), line.strip(), i+1))
 
 				Function(['main'], {}, lines, this, 0, 0, None, None).compile()
 

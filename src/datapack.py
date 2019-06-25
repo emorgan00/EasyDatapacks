@@ -26,7 +26,7 @@ def compile(destination, files, verbose = False, nofiles = False):
 	try:
 		namespace.compile(verbose)
 	except Exception as e:
-		print '(error) '+str(e)
+		print str(e)
 		return False
 
 	if nofiles:
