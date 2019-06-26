@@ -1,567 +1,597 @@
-from namespace import *
-import validate
+from src.commands import *
+from src.reader import *
+from src.validate import *
+
 
 class Function:
 
-	def __init__(this, path, params, lines, namespace, start, expecteddepth, infunc, inloop):
+    def __init__(self, path, params, lines, namespace, start, expecteddepth, infunc, inloop):
 
-		# master list of all generated vanilla commands in the function
-		this.commands = []
+        # master list of all generated vanilla commands in the function
+        self.commands = []
 
-		# path to this function, e.g. ['main', 'load'] refers to the main.load function
-		this.path = path
-		this.name = '.'.join(path)
+        # path to this function, e.g. ['main', 'load'] refers to the main.load function
+        self.path = path
+        self.name = '.'.join(path)
 
-		this.namespace = namespace
-		this.functions = namespace.functions
+        self.namespace = namespace
+        self.functions = namespace.functions
 
-		this.refs = namespace.refs
-		this.pack = namespace.pack
+        self.refs = namespace.refs
+        self.pack = namespace.pack
 
-		# the parameters supplied to this function, follows the same format as refs
-		this.params = params
+        # the parameters supplied to this function, follows the same format as refs
+        self.params = params
+
+        # the raw user input. an element of the list is in the format (tab-depth, str-content, line-number)
+        self.lines = lines
 
-		# the raw user input. an element of the list is in the format (tab-depth, str-content, line-number)
-		this.lines = lines
-
-		# stores the current line we are parsing
-		this.pointer = start
-
-		# stores the reference name of all variables declared locally in this function.
-		this.locals = []
-
-		# stores the expected indentation depth of this function when compiling. Used to ensure correct indentation.
-		this.expecteddepth = expecteddepth
-
-		# stores the number of times this function has forked to another function. Used to ensure unique function names.
-		this.relcounter = 0
-
-		# stores the content of the line before the one we are currently parsing. Currently only used for if-else logic.
-		this.pastline = ''
-
-		# this will get set to true when this function is called by another function. Unused functions will get "collapsed".
-		this.used = False
-
-		# stuff with break/return
-		this.infunc = infunc # stores the fuser-defined which this function is a member of
-		this.inloop = inloop # stores the loop (while/whilenot) which this function is most immediately a member of
-		this.hasbreak = False
-		this.hascontinue = False
-
-	def __str__(this):
-
-		out = this.name[5:]+': '
-		out += str(this.params)
-		out += ' ('+str('.'.join(this.infunc[1:]))+')'
-		out += ' ('+str('.'.join(this.inloop[1:]))+')' if this.inloop != None else ' ()'
-		out += '\n\n\t'+'\n\t'.join(this.commands)+'\n'
-		return out
-
-	# Return the path to a variable with name <var>. It will search starting with the current function, and then check upwards to parent functions.
-	def reference_path(this, var):
-
-		for i in range(len(this.path), 0, -1):
-			test_path = '.'.join(this.path[:i])+'.'+var
-			if test_path in this.refs:
-				return test_path
-		return None
-
-	# Return the path to a function with name <var>. Works the same way as reference_path.
-	def function_path(this, var):
-
-		for i in range(len(this.path), 0, -1):
-			test_path = '.'.join(this.path[:i])+'.'+var
-			if test_path in this.functions:
-				return test_path
-		return None
-
-	# will create an exception with line number and function name
-	def raise_exception(this, string, syntaxerror = False):
-
-		out = 'Error at line %i: ' % this.lines[this.pointer][2]
-		out += '"%s"\n\t' % this.lines[this.pointer][1]
-		out += string
-
-		if syntaxerror:
-			raise SyntaxError(out)
-		else:
-			raise Exception(out)
-
-	# adds the command to this function.
-	def add_command(this, command):
-
-		if not validate.check(command):
-			out = 'An invalid command was generated: "%s".\n\t' % command
-			this.raise_exception(out)
-		this.commands.append(command)
-
-	def compile(this):
-
-		try:
-			depth = this.lines[this.pointer][0]
-		except:
-			this.raise_exception('Expected content, nothing found.', True)
-		if depth != this.expecteddepth:
-			this.raise_exception('Incorrect indentation.', True)
-
-		# pre-process params into local variables
-		for p in this.params:
-			this.refs[this.name+'.'+p] = this.params[p]
-			this.locals.append(this.name+'.'+p)
-
-			if this.params[p] == 'i':
-				this.namespace.ints.add(this.name+'.'+p)
-
-		# pre-process function headers:
-		for i, p in enumerate(this.lines[this.pointer:]):
-			if p[0] < depth: break
-			if p[0] > depth: continue
-			if p[1][:3] == 'def':
-
-				tokens = tokenize(p[1])
-				funcpath = this.path+[tokens[1].strip()]
-				if not valid_name(tokens[1].strip()):
-					this.raise_exception('Invalid function name: "'+tokens[1].strip()+'".')
-
-				funcparams = {}
-				for token in (''.join(tokens[2:])).split(' '):
-					token = token.strip(':')
-					if len(token) == 0: continue
-					if valid_name(token):
-						param = token.split('#')
-						if len(param) == 1:
-							funcparams[token] = 'e'
-						elif param[1] in ('e', 'i'):
-							funcparams[param[0]] = param[1]
-						else:
-							this.raise_exception('Invalid parameter clarifier: "'+token.strip()+'" for function '+tokens[1].strip()+'.')
-					else:
-						this.raise_exception('Invalid parameter name "'+token.strip()+'" for function '+tokens[1].strip()+'.')
-
-				if '.'.join(funcpath) in this.functions:
-					this.raise_exception('Duplicate function "'+funcpath[-1]+'"')
-
-				this.functions['.'.join(funcpath)] = Function(funcpath, funcparams, this.lines, this.namespace, this.pointer+i+1, depth+1, funcpath, None)
-				this.functions['.'.join(funcpath)].used = True
-
-		# process lines
-		while this.pointer < len(this.lines):
-
-			if this.lines[this.pointer][0] == depth:
-				this.process_line()
-			elif this.lines[this.pointer][0] < depth:
-				break
-			this.pointer += 1
-
-		# dispel locals
-		for ref in this.locals:
-			if this.refs[ref] == 'e': # an entity
-				this.add_command(clear_tag(ref))
-			else: # something else
-				pass
-
-			this.refs.pop(ref)
-
-	# called on a single token. Detects references and handles clarifiers. For multi-token strings, use process_tokens.
-	def process_expression(this, expression):
-
-		components = expression.strip().split('#')
-		ref = components[0]
-
-		path = this.reference_path(ref)
-		if path != None: # some reference
-			if this.refs[path] == 'e': # an entity
-				out = ''
-				if len(components) == 2:
-					clarifiers = expression.strip().split('#')[1]
-					if clarifiers == '':
-						out = select_entity(path)
-					elif clarifiers == '1':
-						out = select_entity1(path)
-					elif clarifiers == 'p':
-						out = select_player(path)
-					elif clarifiers in ('1p', 'p1'):
-						out = select_player1(path)
-				else:
-					out = select_entity(path)
-				return out+(' ' if expression[-1] == ' ' else '')
-
-			elif this.refs[path] == 'i': # integer variable
-				return select_int(path, this.pack)+(' ' if expression[-1] == ' ' else '')
-
-		# a simple constant
-		return expression
-
-	# processes the current line.
-	def process_line(this):
-
-		if this.hasbreak or this.hascontinue:
-			return
-
-		line = this.lines[this.pointer][1]
-		tokens = tokenize(line)
-
-		funcpath = this.function_path(tokens[0].strip())
-
-		# creating a new assignment
-		if len(tokens) > 1 and tokens[1].strip() == '=':
-
-			if len(tokens) == 2:
-				this.raise_exception('Expected something after "=".')
-			dest = this.reference_path(tokens[0].strip())
-
-			# assigning something for the first time
-			if dest == None:
-				dest = this.name+'.'+tokens[0].strip()
-				this.locals.append(dest)
-
-			# clearing an old assignment
-			else:
-				if this.refs[dest] == 'e': # an entity
-					this.add_command(clear_tag(dest))
-				else: # something else
-					pass
-
-			# evaluate the right side, perform the new assignment
-			expression = this.process_tokens(tokens[2:], True)
-			refpath = this.reference_path((''.join(tokens[2:])).strip())
-
-			if expression.isdigit(): # an integer constant
-				this.refs[dest] = 'i'
-				this.add_command(assign_int(expression, dest, this.pack))
-				this.namespace.ints.add(dest)
-
-			elif refpath in this.refs and this.refs[refpath] == 'i': # an integer variable
-				this.refs[dest] = 'i'
-				this.add_command(augment_int(dest, refpath, '=', this.pack))
-				this.namespace.ints.add(dest)
-
-			elif expression[0] == '@': # an entity
-				this.refs[dest] = 'e'
-				this.add_command(assign_entity(expression, dest))
-				# special case: assigning as a summon
-				if expression == select_entity('assign'):
-					this.add_command(clear_tag('assign'))
-
-			else: # something else
-				this.raise_exception('Cannot assign "'+expression+'" to variable.')
-
-		# augmented assignment (for integers)
-		elif len(tokens) > 2 and (tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '><')):
-
-			var = tokens[0].strip()
-
-			if tokens[1] in ('+', '-', '/', '*', '%'):
-				op = tokens[1]+tokens[2]
-				expression = (''.join(tokens[3:])).strip()
-			elif tokens[1] == '>':
-				if tokens[2] == '<':
-					op = tokens[1]+tokens[2]
-					expression = (''.join(tokens[3:])).strip()
-				else:
-					op = tokens[1].strip()
-					expression = (''.join(tokens[2:])).strip()
-
-			else:
-				op = tokens[1].strip()
-				expression = (''.join(tokens[2:])).strip()
-
-			if len(tokens) == 2:
-				this.raise_exception('Expected something after "'+op+'"')
-
-			dest = this.reference_path(var)
-			if dest == None or this.refs[dest] != 'i':
-				this.raise_exception('Cannot perform augmented assignment on "'+var+'"')
-			
-			inref = this.reference_path(expression)
-			if inref == None and expression.isdigit(): # int constant
-				if op == '+=':
-					this.add_command(add_int(expression, dest, this.pack))
-				elif op == '-=':
-					this.add_command(sub_int(expression, dest, this.pack))
-				else:
-					var2 = this.namespace.add_constant(expression)
-					this.add_command(augment_int(dest, var2, op, this.pack))
-
-			elif inref == None or this.refs[inref] != 'i':
-				this.raise_exception('Cannot perform augmented assignment with "'+expression+'"')
-
-			# valid variable
-			else:
-				this.add_command(augment_int(dest, inref, op, this.pack))
-
-		# definining a new function
-		elif tokens[0].strip() == 'def':
-
-			this.functions[this.name+'.'+tokens[1].strip()].compile()
-
-		# calling a custom function
-		elif funcpath != None:
-
-			if funcpath == '.'.join(this.infunc):
-				this.raise_exception('Attempt at recursing in function '+'.'.join(this.infunc)+', this is not supported.')
-
-			func = this.functions[funcpath]
-			givenparams = broad_tokenize(''.join(tokens[1:]))
-			if len(givenparams) > len(func.params):
-				this.raise_exception('Too many parameters for function "'+tokens[0].strip()+'".')
-
-			for i, p in enumerate(func.params):
-
-				expression = None
-				try:
-					expression = this.process_expression(givenparams[i]).strip()
-				except IndexError:
-					this.raise_exception('Not enough paramaters for function "'+tokens[0].strip()+'".')
-
-				if func.params[p] == 'e': # an entity
-					this.add_command(assign_entity(expression, func.name+'.'+p))
-
-				elif func.params[p] == 'i': # in integer
-					if expression.isdigit(): # constant int
-						this.add_command(assign_int(expression, func.name+'.'+p, this.pack))
-					elif expression[0] == '@': # reference to int
-						this.add_command(augment_int(func.name+'.'+p, this.reference_path(givenparams[i]), '=', this.pack))
-
-			this.add_command(this.call_function(funcpath))
-
-		# implicit execute
-		elif tokens[0].strip() in ('as', 'at', 'positioned', 'align', 'facing', 'rotated', 'in', 'anchored', 'if', 'unless', 'store'):
-			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
-
-			funcname = this.fork_function('e')
-			# setup execution call
-			this.add_command('execute '+this.process_tokens(tokens, False, True)+' run '+this.call_function(funcname))
-			this.check_break(funcname)
-
-		# if/else
-		elif tokens[0].strip() == 'else':
-			if this.pastline[:3] != 'if ':
-				this.raise_exception('"else" without matching "if"')
-			this.lines[this.pointer] = (this.lines[this.pointer][0], 'unless'+this.pastline[2:])
-			this.process_line()
-			return
-
-		# repeat
-		elif tokens[0].strip() == 'repeat':
-
-			count = None
-			for token in tokens[1:]:
-				if token.isdigit():
-					count = int(token)
-					break
-			if count == None:
-				this.raise_exception('"repeat" without a number following it.')
-
-			funcname = this.fork_function('r')
-			# setup execution call
-			for i in range(count):
-				this.add_command(this.call_function(funcname))
-			this.check_break(funcname)
-
-		# while loop
-		elif tokens[0].strip() in ('while', 'whilenot'):
-			if tokens[-1] == ':': tokens.pop() # remove a trailing ':'
-
-			funcname = this.fork_function('w')
-			# setup execution call
-			if tokens[0].strip() == 'while':
-				call = 'execute if '+this.process_tokens(tokens[1:], False, True)+' run '+this.call_function(funcname, True)
-			else:
-				call = 'execute unless '+this.process_tokens(tokens[1:], False, True)+' run '+this.call_function(funcname, True)
-			this.add_command(call)
-			this.functions[funcname].call_loop(funcname, call)
-			if this.functions[funcname].hasbreak:
-				this.add_command('kill @e[type=armor_stand,tag='+funcname+'.BREAK]')
-			if this.functions[funcname].hascontinue:
-				this.add_command('kill @e[type=armor_stand,tag='+funcname+'.CONTINUE]')
-
-		# break
-		elif tokens[0].strip() == 'break':
-			if this.inloop == None:
-				this.raise_exception('"break" outside of loop.')
-			
-			this.hasbreak = True
-			this.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.BREAK"]}')
-
-		# continue
-		elif tokens[0].strip() == 'continue':
-			if this.inloop == None:
-				this.raise_exception('"continue" outside of loop.')
-			
-			this.hascontinue = True
-			this.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["'+'.'.join(this.inloop)+'.CONTINUE"]}')
-
-		# vanilla command
-		elif this.infunc == None:
-			this.raise_exception('Vanilla command outside of a function. This is not allowed, consider putting it inside the load function.')
-		elif tokens[0].strip() == 'function':
-			this.raise_exception('The /function command is no longer used. Just type your function as if it were a command.')
-		
-		else:
-			this.add_command(this.process_tokens(tokens))
-
-		this.pastline = line
-
-	# called on a set of tokens, intended to evaluate to a single string which represents some value which can be inserted into vanilla commands.
-	# this can be an entity, integer, or series of vanilla commands (or components thereof)
-	# will handle references as part of an expression.
-	def process_tokens(this, tokens, augsummon = False, conditional = False):
-
-		args = broad_tokenize(''.join(tokens).strip())
-
-		# special case: assigning as a summon
-		if augsummon and args[0] == 'summon':
-			ref = ' '.join(args)
-			if 'Tags:[' in ref:
-				this.add_command(ref.replace('Tags:[', 'Tags:["assign",'))
-			elif ref[-1] == '}':
-				this.add_command(ref[:-1]+',Tags:["assign"]}')
-			else:
-				this.add_command(ref+' {Tags:["assign"]}')
-			return select_entity('assign')
-
-		# special case: conditional
-		if conditional and len(args) > 2:
-			for i in range(1, len(args)-1):
-				op = args[i]
-				if op in ('<', '>', '==', '<=', '>='):
-					var = this.reference_path(args[i-1])
-					if var == None or this.refs[var] != 'i':
-						this.raise_exception('"'+args[i-1]+'" is not a valid integer variable.')
-					if not args[i+1].isdigit():
-						this.raise_exception('"'+args[i+1]+'" is not an integer at '+this.name)
-					if i > 1 and not args[i-2] in ('if', 'unless', 'while', 'whilenot'):
-						this.raise_exception('Integer comparison without a conditional.')
-					args[i-1] = check_int(var, op, args[i+1], this.pack)
-					args[i] = None
-					args[i+1] = None
-
-		tokens = tokenize(' '.join(a for a in args if a != None))
-
-		for i, token in enumerate(tokens):
-			refpath = this.reference_path(token.split('#')[0])
-			token = this.process_expression(token)
-			# narrowing
-			if refpath != None and token[0] == '@' and i != len(tokens)-1 and tokens[i+1][0] == '[' and tokens[i][-1] != ' ':
-				tokens[i+1] = ','+tokens[i+1][1:]
-				token = token[:-1]
-			tokens[i] = token
-
-		return (''.join(tokens)).strip()
-
-	# <code> refers to the type of function. These are the same codes as are used in function path/file names.
-	# 'w' = while loop body
-	# 'e' = implicit execution
-	# 'r' = repeat loop body
-	# 'b' = chained continue/break-check function
-	# returns the name of the function which was generated
-	def fork_function(this, code):
-
-		# generate inner content as function
-		inloop = this.inloop
-		newpointer = this.pointer+1
-		newdepth = this.expecteddepth+1
-
-		funcpath = this.path+[code+str(this.relcounter)]
-
-		# check if creating new loop
-		if code in ('w'):
-			inloop = funcpath
-
-		# check if a break
-		if code == 'b':
-			newdepth -= 1
-			while newpointer < len(this.lines) and this.lines[newpointer][0] > this.expecteddepth:
-				newpointer += 1
-			if this.path[-1][0] == 'b':
-				funcpath = this.path[:-1]+['b'+str(int(this.path[-1][1])+1)]
-
-		funcname = '.'.join(funcpath)
-
-		try:
-			this.functions[funcname] = Function(funcpath, {}, this.lines, this.namespace, newpointer, newdepth, this.infunc, inloop)
-			this.functions[funcname].compile()
-		except SyntaxError as e:
-			# gonna be honest here, I barely remember writing this and it seems like black magic to me. But it works perfectly.
-			if code != 'b': raise e
-
-		this.relcounter += 1
-		return funcname
-
-	# this will call a sub-function of name <funcname>. <nocollapse> will disable collapsing a 1-line function
-	def call_function(this, funcname, nocollapse = False):
-
-		func = this.functions[funcname]
-		if len(func.commands) > 1 or nocollapse:
-			func.used = True
-			return 'function '+this.pack+':'+funcname[5:]
-		elif len(func.commands) == 1:
-			# if a function is only 1 command, just execute it directly.
-			return func.commands[0]
-		else:
-			func.used = True
-			return 'function '+this.pack+':'+funcname[5:]
-
-	# this is called after spawning a forked function. It checks if the function has a break/continue,
-	# and will branch the current function accordingly.
-	def check_break(this, funcname):
-
-		func = this.functions[funcname]
-
-		if this.inloop != None and (func.hasbreak or func.hascontinue):
-
-			fork = this.fork_function('b')
-			call = 'execute '
-
-			if func.hasbreak:
-				this.hasbreak = True
-				call += 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] '
-
-			if func.hascontinue:
-				this.hascontinue = True
-				call += 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] '
-
-			# if fork isn't in this.functions, then it was collapsed and we don't have to worry about it.
-			if fork in this.functions and len(this.functions[fork].commands) > 0:
-				call += 'run '+this.call_function(fork)
-				this.add_command(call)
-
-			# breaks should always propagate backwards through a b-function chain.
-			if this.functions[fork].hasbreak:
-				this.hasbreak = True
-			if this.functions[fork].hascontinue:
-				this.hascontinue = True
-
-	# this is called by a loop's parent function to set up that loop's self-call
-	def call_loop(this, funcname, call):
-		
-		func = this.functions[funcname]
-		while func.commands[-1][-2] == 'b':
-			newname = 'main.'+func.commands[-1].split(':')[-1]
-			func = this.functions[newname]
-
-		# <call> should be a call directly to the outermost loop function
-		newcall = call
-
-		# if the loop has a break/continue, we need to ensure it hasn't been called before looping again
-		if func.hasbreak or func.hascontinue:
-
-			if func.hasbreak:
-				newcall = 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.BREAK] run '+newcall
-
-			if func.hascontinue:
-				newcall = 'unless entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] run '+newcall
-
-			newcall = 'execute '+newcall
-
-		func.commands.append(newcall)
-
-		# if the loop has a continue, we need to reset it to the beginning if we reach the end and continue has been called
-		if this.functions[funcname].hascontinue:
-
-			cmd = 'kill @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE]'
-			this.functions[funcname].commands.insert(0, cmd)
-
-			cmd = 'execute if entity @e[type=armor_stand,tag='+'.'.join(this.inloop)+'.CONTINUE] run '+call
-			this.functions[funcname].commands.append(cmd)
+        # stores the current line we are parsing
+        self.pointer = start
+
+        # stores the reference name of all variables declared locally in this function.
+        self.locals = []
+
+        # stores the expected indentation depth of this function when compiling. Used to ensure correct indentation.
+        self.expecteddepth = expecteddepth
+
+        # stores the number of times this function has forked to another function. Used to ensure unique function names.
+        self.relcounter = 0
+
+        # stores the content of the line before the one we are currently parsing. Currently only used for if-else logic.
+        self.pastline = ''
+
+        # this will get set to true when this function is called by another function. Unused functions will get
+        # "collapsed".
+        self.used = False
+
+        # stuff with break/return
+        self.infunc = infunc  # stores the fuser-defined which this function is a member of
+        self.inloop = inloop  # stores the loop (while/whilenot) which this function is most immediately a member of
+        self.hasbreak = False
+        self.hascontinue = False
+
+    def __str__(self):
+
+        out = self.name[5:] + ': '
+        out += str(self.params)
+        out += ' (' + str('.'.join(self.infunc[1:])) + ')'
+        out += ' (' + str('.'.join(self.inloop[1:])) + ')' if self.inloop is not None else ' ()'
+        out += '\n\n\t' + '\n\t'.join(self.commands) + '\n'
+        return out
+
+    # Return the path to a variable with name <var>. It will search starting with the current function,
+    # and then check upwards to parent functions.
+    def reference_path(self, var):
+
+        for i in range(len(self.path), 0, -1):
+            test_path = '.'.join(self.path[:i]) + '.' + var
+            if test_path in self.refs:
+                return test_path
+        return None
+
+    # Return the path to a function with name <var>. Works the same way as reference_path.
+    def function_path(self, var):
+
+        for i in range(len(self.path), 0, -1):
+            test_path = '.'.join(self.path[:i]) + '.' + var
+            if test_path in self.functions:
+                return test_path
+        return None
+
+    # will create an exception with line number and function name
+    def raise_exception(self, string, syntaxerror=False):
+
+        out = 'Error at line %i: ' % self.lines[self.pointer][2]
+        out += '"%s"\n\t' % self.lines[self.pointer][1]
+        out += string
+
+        if syntaxerror:
+            raise SyntaxError(out)
+        else:
+            raise Exception(out)
+
+    # adds the command to this function.
+    def add_command(self, command):
+
+        if not check(command):
+            out = 'An invalid command was generated: "%s".\n\t' % command
+            self.raise_exception(out)
+        self.commands.append(command)
+
+    def compile(self):
+
+        try:
+            depth = self.lines[self.pointer][0]
+        except Exception:
+            self.raise_exception('Expected content, nothing found.', True)
+            return
+        if depth != self.expecteddepth:
+            self.raise_exception('Incorrect indentation.', True)
+
+        # pre-process params into local variables
+        for p in self.params:
+            self.refs[self.name + '.' + p] = self.params[p]
+            self.locals.append(self.name + '.' + p)
+
+            if self.params[p] == 'i':
+                self.namespace.ints.add(self.name + '.' + p)
+
+        # pre-process function headers:
+        for i, p in enumerate(self.lines[self.pointer:]):
+            if p[0] < depth:
+                break
+            if p[0] > depth:
+                continue
+            if p[1][:3] == 'def':
+
+                tokens = tokenize(p[1])
+                funcpath = self.path + [tokens[1].strip()]
+                if not valid_name(tokens[1].strip()):
+                    self.raise_exception('Invalid function name: "' + tokens[1].strip() + '".')
+
+                funcparams = {}
+                for token in (''.join(tokens[2:])).split(' '):
+                    token = token.strip(':')
+                    if len(token) == 0:
+                        continue
+                    if valid_name(token):
+                        param = token.split('#')
+                        if len(param) == 1:
+                            funcparams[token] = 'e'
+                        elif param[1] in ('e', 'i'):
+                            funcparams[param[0]] = param[1]
+                        else:
+                            self.raise_exception(
+                                'Invalid parameter clarifier: "' + token.strip() + '" for function ' + tokens[
+                                    1].strip() + '.')
+                    else:
+                        self.raise_exception(
+                            'Invalid parameter name "' + token.strip() + '" for function ' + tokens[1].strip() + '.')
+
+                if '.'.join(funcpath) in self.functions:
+                    self.raise_exception('Duplicate function "' + funcpath[-1] + '"')
+
+                self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, self.lines, self.namespace,
+                                                              self.pointer + i + 1, depth + 1, funcpath, None)
+                self.functions['.'.join(funcpath)].used = True
+
+        # process lines
+        while self.pointer < len(self.lines):
+
+            if self.lines[self.pointer][0] == depth:
+                self.process_line()
+            elif self.lines[self.pointer][0] < depth:
+                break
+            self.pointer += 1
+
+        # dispel locals
+        for ref in self.locals:
+            if self.refs[ref] == 'e':  # an entity
+                self.add_command(clear_tag(ref))
+            else:  # something else
+                pass
+
+            self.refs.pop(ref)
+
+    # called on a single token. Detects references and handles clarifiers. For multi-token strings, use process_tokens.
+    def process_expression(self, expression):
+
+        components = expression.strip().split('#')
+        ref = components[0]
+
+        path = self.reference_path(ref)
+        if path is not None:  # some reference
+            if self.refs[path] == 'e':  # an entity
+                out = ''
+                if len(components) == 2:
+                    clarifiers = expression.strip().split('#')[1]
+                    if clarifiers == '':
+                        out = select_entity(path)
+                    elif clarifiers == '1':
+                        out = select_entity1(path)
+                    elif clarifiers == 'p':
+                        out = select_player(path)
+                    elif clarifiers in ('1p', 'p1'):
+                        out = select_player1(path)
+                else:
+                    out = select_entity(path)
+                return out + (' ' if expression[-1] == ' ' else '')
+
+            elif self.refs[path] == 'i':  # integer variable
+                return select_int(path, self.pack) + (' ' if expression[-1] == ' ' else '')
+
+        # a simple constant
+        return expression
+
+    # processes the current line.
+    def process_line(self):
+
+        if self.hasbreak or self.hascontinue:
+            return
+
+        line = self.lines[self.pointer][1]
+        tokens = tokenize(line)
+
+        funcpath = self.function_path(tokens[0].strip())
+
+        # creating a new assignment
+        if len(tokens) > 1 and tokens[1].strip() == '=':
+
+            if len(tokens) == 2:
+                self.raise_exception('Expected something after "=".')
+            dest = self.reference_path(tokens[0].strip())
+
+            # assigning something for the first time
+            if dest is None:
+                dest = self.name + '.' + tokens[0].strip()
+                self.locals.append(dest)
+
+            # clearing an old assignment
+            else:
+                if self.refs[dest] == 'e':  # an entity
+                    self.add_command(clear_tag(dest))
+                else:  # something else
+                    pass
+
+            # evaluate the right side, perform the new assignment
+            expression = self.process_tokens(tokens[2:], True)
+            refpath = self.reference_path((''.join(tokens[2:])).strip())
+
+            if expression.isdigit():  # an integer constant
+                self.refs[dest] = 'i'
+                self.add_command(assign_int(expression, dest, self.pack))
+                self.namespace.ints.add(dest)
+
+            elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
+                self.refs[dest] = 'i'
+                self.add_command(augment_int(dest, refpath, '=', self.pack))
+                self.namespace.ints.add(dest)
+
+            elif expression[0] == '@':  # an entity
+                self.refs[dest] = 'e'
+                self.add_command(assign_entity(expression, dest))
+                # special case: assigning as a summon
+                if expression == select_entity('assign'):
+                    self.add_command(clear_tag('assign'))
+
+            else:  # something else
+                self.raise_exception('Cannot assign "' + expression + '" to variable.')
+
+        # augmented assignment (for integers)
+        elif len(tokens) > 2 and (
+                tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '><')):
+
+            var = tokens[0].strip()
+
+            if tokens[1] in ('+', '-', '/', '*', '%'):
+                op = tokens[1] + tokens[2]
+                expression = (''.join(tokens[3:])).strip()
+            elif tokens[1] == '>':
+                if tokens[2] == '<':
+                    op = tokens[1] + tokens[2]
+                    expression = (''.join(tokens[3:])).strip()
+                else:
+                    op = tokens[1].strip()
+                    expression = (''.join(tokens[2:])).strip()
+
+            else:
+                op = tokens[1].strip()
+                expression = (''.join(tokens[2:])).strip()
+
+            if len(tokens) == 2:
+                self.raise_exception('Expected something after "' + op + '"')
+
+            dest = self.reference_path(var)
+            if dest is None or self.refs[dest] != 'i':
+                self.raise_exception('Cannot perform augmented assignment on "' + var + '"')
+
+            inref = self.reference_path(expression)
+            if inref is None and expression.isdigit():  # int constant
+                if op == '+=':
+                    self.add_command(add_int(expression, dest, self.pack))
+                elif op == '-=':
+                    self.add_command(sub_int(expression, dest, self.pack))
+                else:
+                    var2 = self.namespace.add_constant(expression)
+                    self.add_command(augment_int(dest, var2, op, self.pack))
+
+            elif inref is None or self.refs[inref] != 'i':
+                self.raise_exception('Cannot perform augmented assignment with "' + expression + '"')
+
+            # valid variable
+            else:
+                self.add_command(augment_int(dest, inref, op, self.pack))
+
+        # definining a new function
+        elif tokens[0].strip() == 'def':
+
+            self.functions[self.name + '.' + tokens[1].strip()].compile()
+
+        # calling a custom function
+        elif funcpath is not None:
+
+            if funcpath == '.'.join(self.infunc):
+                self.raise_exception(
+                    'Attempt at recursing in function ' + '.'.join(self.infunc) + ', this is not supported.')
+
+            func = self.functions[funcpath]
+            givenparams = broad_tokenize(''.join(tokens[1:]))
+            if len(givenparams) > len(func.params):
+                self.raise_exception('Too many parameters for function "' + tokens[0].strip() + '".')
+
+            for i, p in enumerate(func.params):
+
+                expression = None
+                try:
+                    expression = self.process_expression(givenparams[i]).strip()
+                except IndexError:
+                    self.raise_exception('Not enough paramaters for function "' + tokens[0].strip() + '".')
+
+                if func.params[p] == 'e':  # an entity
+                    self.add_command(assign_entity(expression, func.name + '.' + p))
+
+                elif func.params[p] == 'i':  # in integer
+                    if expression.isdigit():  # constant int
+                        self.add_command(assign_int(expression, func.name + '.' + p, self.pack))
+                    elif expression[0] == '@':  # reference to int
+                        self.add_command(
+                            augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.pack))
+
+            self.add_command(self.call_function(funcpath))
+
+        # implicit execute
+        elif tokens[0].strip() in (
+                'as', 'at', 'positioned', 'align', 'facing', 'rotated', 'in', 'anchored', 'if', 'unless', 'store'):
+            if tokens[-1] == ':':
+                tokens.pop()  # remove a trailing ':'
+
+            funcname = self.fork_function('e')
+            # setup execution call
+            self.add_command(
+                'execute ' + self.process_tokens(tokens, False, True) + ' run ' + self.call_function(funcname))
+            self.check_break(funcname)
+
+        # if/else
+        elif tokens[0].strip() == 'else':
+            if self.pastline[:3] != 'if ':
+                self.raise_exception('"else" without matching "if"')
+            self.lines[self.pointer] = (self.lines[self.pointer][0], 'unless' + self.pastline[2:])
+            self.process_line()
+            return
+
+        # repeat
+        elif tokens[0].strip() == 'repeat':
+
+            count = None
+            for token in tokens[1:]:
+                if token.isdigit():
+                    count = int(token)
+                    break
+            if count is None:
+                self.raise_exception('"repeat" without a number following it.')
+
+            funcname = self.fork_function('r')
+            # setup execution call
+            for i in range(count):
+                self.add_command(self.call_function(funcname))
+            self.check_break(funcname)
+
+        # while loop
+        elif tokens[0].strip() in ('while', 'whilenot'):
+            if tokens[-1] == ':':
+                tokens.pop()  # remove a trailing ':'
+
+            funcname = self.fork_function('w')
+            # setup execution call
+            if tokens[0].strip() == 'while':
+                call = 'execute if ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(
+                    funcname, True)
+            else:
+                call = 'execute unless ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(
+                    funcname, True)
+            self.add_command(call)
+            self.functions[funcname].call_loop(funcname, call)
+            if self.functions[funcname].hasbreak:
+                self.add_command('kill @e[type=armor_stand,tag=' + funcname + '.BREAK]')
+            if self.functions[funcname].hascontinue:
+                self.add_command('kill @e[type=armor_stand,tag=' + funcname + '.CONTINUE]')
+
+        # break
+        elif tokens[0].strip() == 'break':
+            if self.inloop is None:
+                self.raise_exception('"break" outside of loop.')
+
+            self.hasbreak = True
+            self.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + '.'.join(
+                self.inloop) + '.BREAK"]}')
+
+        # continue
+        elif tokens[0].strip() == 'continue':
+            if self.inloop is None:
+                self.raise_exception('"continue" outside of loop.')
+
+            self.hascontinue = True
+            self.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + '.'.join(
+                self.inloop) + '.CONTINUE"]}')
+
+        # vanilla command
+        elif self.infunc is None:
+            self.raise_exception(
+                'Vanilla command outside of a function. This is not allowed, consider putting it inside the load '
+                'function.')
+        elif tokens[0].strip() == 'function':
+            self.raise_exception(
+                'The /function command is no longer used. Just type your function as if it were a command.')
+
+        else:
+            self.add_command(self.process_tokens(tokens))
+
+        self.pastline = line
+
+    # called on a set of tokens, intended to evaluate to a single string which represents some value which can be
+    # inserted into vanilla commands. this can be an entity, integer, or series of vanilla commands (or components
+    # thereof) will handle references as part of an expression.
+    def process_tokens(self, tokens, augsummon=False, conditional=False):
+
+        args = broad_tokenize(''.join(tokens).strip())
+
+        # special case: assigning as a summon
+        if augsummon and args[0] == 'summon':
+            ref = ' '.join(args)
+            if 'Tags:[' in ref:
+                self.add_command(ref.replace('Tags:[', 'Tags:["assign",'))
+            elif ref[-1] == '}':
+                self.add_command(ref[:-1] + ',Tags:["assign"]}')
+            else:
+                self.add_command(ref + ' {Tags:["assign"]}')
+            return select_entity('assign')
+
+        # special case: conditional
+        if conditional and len(args) > 2:
+            for i in range(1, len(args) - 1):
+                op = args[i]
+                if op in ('<', '>', '==', '<=', '>='):
+                    var = self.reference_path(args[i - 1])
+                    if var is None or self.refs[var] != 'i':
+                        self.raise_exception('"' + args[i - 1] + '" is not a valid integer variable.')
+                    if not args[i + 1].isdigit():
+                        self.raise_exception('"' + args[i + 1] + '" is not an integer at ' + self.name)
+                    if i > 1 and not args[i - 2] in ('if', 'unless', 'while', 'whilenot'):
+                        self.raise_exception('Integer comparison without a conditional.')
+                    args[i - 1] = check_int(var, op, args[i + 1], self.pack)
+                    args[i] = None
+                    args[i + 1] = None
+
+        tokens = tokenize(' '.join(a for a in args if a is not None))
+
+        for i, token in enumerate(tokens):
+            refpath = self.reference_path(token.split('#')[0])
+            token = self.process_expression(token)
+            # narrowing
+            if refpath is not None and token[0] == '@' and i != len(tokens) - 1 and tokens[i + 1][0] == '[' \
+                    and tokens[i][-1] != ' ':
+                tokens[i + 1] = ',' + tokens[i + 1][1:]
+                token = token[:-1]
+            tokens[i] = token
+
+        return (''.join(tokens)).strip()
+
+    # <code> refers to the type of function. These are the same codes as are used in function path/file names.
+    # 'w' = while loop body
+    # 'e' = implicit execution
+    # 'r' = repeat loop body
+    # 'b' = chained continue/break-check function
+    # returns the name of the function which was generated
+    def fork_function(self, code):
+
+        # generate inner content as function
+        inloop = self.inloop
+        newpointer = self.pointer + 1
+        newdepth = self.expecteddepth + 1
+
+        funcpath = self.path + [code + str(self.relcounter)]
+
+        # check if creating new loop
+        if code in 'w':
+            inloop = funcpath
+
+        # check if a break
+        if code == 'b':
+            newdepth -= 1
+            while newpointer < len(self.lines) and self.lines[newpointer][0] > self.expecteddepth:
+                newpointer += 1
+            if self.path[-1][0] == 'b':
+                funcpath = self.path[:-1] + ['b' + str(int(self.path[-1][1]) + 1)]
+
+        funcname = '.'.join(funcpath)
+
+        try:
+            self.functions[funcname] = Function(funcpath, {}, self.lines, self.namespace, newpointer, newdepth,
+                                                self.infunc, inloop)
+            self.functions[funcname].compile()
+        except SyntaxError as e:
+            # gonna be honest here, I barely remember writing this and it seems like black magic to me. But it works
+            # perfectly.
+            if code != 'b':
+                raise e
+
+        self.relcounter += 1
+        return funcname
+
+    # this will call a sub-function of name <funcname>. <nocollapse> will disable collapsing a 1-line function
+    def call_function(self, funcname, nocollapse=False):
+
+        func = self.functions[funcname]
+        if len(func.commands) > 1 or nocollapse:
+            func.used = True
+            return 'function ' + self.pack + ':' + funcname[5:]
+        elif len(func.commands) == 1:
+            # if a function is only 1 command, just execute it directly.
+            return func.commands[0]
+        else:
+            func.used = True
+            return 'function ' + self.pack + ':' + funcname[5:]
+
+    # this is called after spawning a forked function. It checks if the function has a break/continue,
+    # and will branch the current function accordingly.
+    def check_break(self, funcname):
+
+        func = self.functions[funcname]
+
+        if self.inloop is not None and (func.hasbreak or func.hascontinue):
+
+            fork = self.fork_function('b')
+            call = 'execute '
+
+            if func.hasbreak:
+                self.hasbreak = True
+                call += 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.BREAK] '
+
+            if func.hascontinue:
+                self.hascontinue = True
+                call += 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] '
+
+            # if fork isn't in this.functions, then it was collapsed and we don't have to worry about it.
+            if fork in self.functions and len(self.functions[fork].commands) > 0:
+                call += 'run ' + self.call_function(fork)
+                self.add_command(call)
+
+            # breaks should always propagate backwards through a b-function chain.
+            if self.functions[fork].hasbreak:
+                self.hasbreak = True
+            if self.functions[fork].hascontinue:
+                self.hascontinue = True
+
+    # this is called by a loop's parent function to set up that loop's self-call
+    def call_loop(self, funcname, call):
+
+        func = self.functions[funcname]
+        while func.commands[-1][-2] == 'b':
+            newname = 'main.' + func.commands[-1].split(':')[-1]
+            func = self.functions[newname]
+
+        # <call> should be a call directly to the outermost loop function
+        newcall = call
+
+        # if the loop has a break/continue, we need to ensure it hasn't been called before looping again
+        if func.hasbreak or func.hascontinue:
+
+            if func.hasbreak:
+                newcall = 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.BREAK] run ' + newcall
+
+            if func.hascontinue:
+                newcall = 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + newcall
+
+            newcall = 'execute ' + newcall
+
+        func.commands.append(newcall)
+
+        # if the loop has a continue, we need to reset it to the beginning if we reach the end and continue has been
+        # called
+        if self.functions[funcname].hascontinue:
+            cmd = 'kill @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE]'
+            self.functions[funcname].commands.insert(0, cmd)
+
+            cmd = 'execute if entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + call
+            self.functions[funcname].commands.append(cmd)
