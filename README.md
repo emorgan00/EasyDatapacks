@@ -448,7 +448,7 @@ Compiling multiple files works exactly as if all the code from the separate file
 ## Compiling with a Python Script
 **note:** This section assumes you know how to organize your python files to successfully import a file from EasyDatapacks.
 
-Some users may prefer to use a python script to quickly compile their files. Please note that this uses python 2.7. Once you have the files from EasyDatapacks in the same directory as your script, your code should look something like this:
+Some users may prefer to use a python script to quickly compile their files. Please note that this uses python 3. Once you have the files from EasyDatapacks in the same directory as your script, your code should look something like this:
 
 ```
 import datapack # this should import datapack.py
