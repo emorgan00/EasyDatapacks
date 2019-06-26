@@ -32,7 +32,11 @@ if __name__ == '__main__':
         print(USAGE)
         sys.exit()
 
-    success = compile(params[0], params[1:], verbose, nofiles)
+    try:
+        success = compile(params[0], params[1:], verbose, nofiles)
+    except CompilationError as e:
+        print(e)
+        sys.exit()
 
     if success:
         print('successfully created datapack "' + params[0].split('/')[-1].split('\\')[-1] + '"')

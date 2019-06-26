@@ -2,6 +2,7 @@ import os
 import shutil
 
 from src.namespace import *
+from src.function import CompilationError
 
 MCMETA = '''{
     "pack" : {
@@ -19,16 +20,13 @@ LOADTICK = '''{
 
 
 def compile(destination, files, verbose=False, nofiles=False):
-    """path_in points to a text file containing your code.
-    packname points to the folder where you want your datapack to end up"""
+    """files is a list of text files containing your code.
+    destination points to the folder where you want your datapack to end up"""
 
     packname = destination.split('/')[-1].split('\\')[-1]
 
     namespace = Namespace(packname, files)
-    try:
-        namespace.compile(verbose)
-    except Exception as e:
-        raise e.__class__(str(e))
+    namespace.compile(verbose)
 
     if nofiles:
         return False

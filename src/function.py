@@ -3,6 +3,13 @@ from src.reader import *
 from src.validate import *
 
 
+class CompilationError(Exception):
+    pass
+
+class CompilationSyntaxError(CompilationError):
+    pass
+
+
 class Function:
 
     def __init__(self, path, params, lines, namespace, start, expecteddepth, infunc, inloop):
@@ -46,7 +53,7 @@ class Function:
         self.used = False
 
         # stuff with break/return
-        self.infunc = infunc  # stores the fuser-defined which this function is a member of
+        self.infunc = infunc  # stores the user-defined function which this function is a member of
         self.inloop = inloop  # stores the loop (while/whilenot) which this function is most immediately a member of
         self.hasbreak = False
         self.hascontinue = False
@@ -80,16 +87,22 @@ class Function:
         return None
 
     # will create an exception with line number and function name
+    # syntaxerror means we are dealing with missing content
     def raise_exception(self, string, syntaxerror=False):
 
-        out = 'Error at line %i: ' % self.lines[self.pointer][2]
-        out += '"%s"\n\t' % self.lines[self.pointer][1]
+        if syntaxerror:
+            self.pointer -= 1
+            out = 'Error after line '
+        else:
+            out = 'Error at line '
+
+        out += '%i: "%s"\n\t' % (self.lines[self.pointer][2], self.lines[self.pointer][1])
         out += string
 
         if syntaxerror:
-            raise SyntaxError(out)
+            raise CompilationSyntaxError(out)
         else:
-            raise Exception(out)
+            raise CompilationError(out)
 
     # adds the command to this function.
     def add_command(self, command):
@@ -101,11 +114,10 @@ class Function:
 
     def compile(self):
 
-        try:
-            depth = self.lines[self.pointer][0]
-        except Exception:
+        if len(self.lines) <= self.pointer:
             self.raise_exception('Expected content, nothing found.', True)
-            return
+
+        depth = self.lines[self.pointer][0]
         if depth != self.expecteddepth:
             self.raise_exception('Incorrect indentation.', True)
 
