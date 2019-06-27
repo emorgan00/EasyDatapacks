@@ -502,10 +502,10 @@ class Function:
                     # left side
                     if refright != None and self.refs[refright] == 'i':
                         varright = refright
-                    elif args[i - 1].isdigit():
+                    elif args[i + 1].isdigit():
                         varright = args[i - 1]
                     else:
-                        self.raise_exception('"' + args[i - 1] + '" is not a valid integer variable or constant.')
+                        self.raise_exception('"' + args[i + 1] + '" is not a valid integer variable or constant.')
 
                     if i > 1 and not args[i - 2] in ('if', 'unless', 'while', 'whilenot'):
                         self.raise_exception('Integer comparison without a conditional.')
