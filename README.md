@@ -420,30 +420,41 @@ Code on GitHub: https://github.com/emorgan00/EasyDatapacks
 ## Compiling from the Command Line
 **note:** This section will assume you are familiar with using the command line, and running python files.
 
-To use the command line interface, run EasyDatapacks.py:
+To use the command line interface, run:
 
-`$ python EasyDatapacks.py <destination-folder> <input-file>`
+`$ python3 src/ build -o <destination-folder> <input-file>`
 
 This will take the file in <input-file> and compile it into a datapack located at <destination-folder>. Here is an example of what this might look like:
 
-`$ python EasyDatapacks.py path\to\MyWorld\datapacks\mydatapack path\to\mydatapack.mcf`
+`$ python3 src/ build -o path/to/MyWorld/datapacks/mydatapack path/to/mydatapack.mcf`
+
+If you omit the `-o`, or `--output`, option, the output directory defaults to the name of the first file
+without its extension.
 
 Note that I have adopted the .mcf extension for programs in EasyDatapacks, as a shorter version of .mcfunction. I would recommend using the same.
 
 Additionally, you can add one of the following flags:
 ```
--v, -verbose: print out all generated commands.
--n, -nofiles: don't generate any files.
+-v, --verbose: print out all generated commands.
+-n, --nofiles: don't generate any files.
 ```
 Use a flag like this:
 
-`$ python EasyDatapacks.py -v <destination-folder> <input-file>`
+`$ python3 src/ build -v -o <destination-folder> <input-file>`
 
 You can also compile multiple files at once, like this:
 
-`$ python EasyDatapacks.py <destination-folder> <file1> <file2> <...>`
+`$ python3 src/ build -o <destination-folder> <file1> <file2> <...>`
 
 Compiling multiple files works exactly as if all the code from the separate files was all in one file.
+
+There's also the `link` command, which easily symlinks a given datapack folder into your `.minecraft`
+folder, so you can develop it without having to copy it over there every time:
+
+`$ python3 src/ link <datapack-destination-folder> <save-name>`
+
+Every time you update that directory, those updates will also be carried out on the datapack in the
+`.minecraft` directory.
 
 ## Compiling with a Python Script
 **note:** This section assumes you know how to organize your python files to successfully import a file from EasyDatapacks.
