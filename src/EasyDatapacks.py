@@ -1,6 +1,6 @@
 import sys
 
-from src.datapack import *
+from datapack import *
 
 USAGE = '''
 usage:

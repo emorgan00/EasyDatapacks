@@ -1,6 +1,6 @@
-from src.commands import *
-from src.reader import *
-from src.validate import *
+from commands import *
+from reader import *
+from validate import *
 
 
 class CompilationError(Exception):
@@ -107,8 +107,8 @@ class Function:
     # adds the command to this function.
     def add_command(self, command):
 
-        if not check(command):
-            out = 'An invalid command was generated: "%s".\n\t' % command
+        out = check(command)
+        if out != None:
             self.raise_exception(out)
         self.commands.append(command)
 
