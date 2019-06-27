@@ -327,6 +327,18 @@ class Function:
             else:
                 self.add_command(augment_int(dest, inref, op, self.pack))
 
+        # increment / decrement
+        elif len(tokens) > 2 and ''.join(tokens[1:]) in ('++', '--'):
+
+            var = tokens[0].strip()
+            ref = self.reference_path(var)
+            if ref == None:
+                self.raise_exception('Cannot perform augmented assignment on "' + var + '"')
+            elif ''.join(tokens[1:]) == '++':
+                self.add_command(add_int('1', ref, self.pack))
+            else:
+                self.add_command(sub_int('1', ref, self.pack))
+
         # definining a new function
         elif tokens[0].strip() == 'def':
 
