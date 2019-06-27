@@ -366,6 +366,12 @@ class Function:
 
         # if/else
         elif tokens[0].strip() == 'else':
+            if tokens[-1] == ':':
+                tokens.pop()  # remove a trailing ':'
+
+            if len(tokens) > 1:
+                self.raise_exception('"else" does not take any additional parameters.')
+
             if self.pastline[:3] != 'if ':
                 self.raise_exception('"else" without matching "if"')
             self.lines[self.pointer] = (self.lines[self.pointer][0], 'unless' + self.pastline[2:])
@@ -522,9 +528,7 @@ class Function:
             self.functions[funcname] = Function(funcpath, {}, self.lines, self.namespace, newpointer, newdepth,
                                                 self.infunc, inloop)
             self.functions[funcname].compile()
-        except SyntaxError as e:
-            # gonna be honest here, I barely remember writing this and it seems like black magic to me. But it works
-            # perfectly.
+        except CompilationSyntaxError as e:
             if code != 'b':
                 raise e
 
@@ -564,7 +568,7 @@ class Function:
                 self.hascontinue = True
                 call += 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] '
 
-            # if fork isn't in this.functions, then it was collapsed and we don't have to worry about it.
+            # if fork isn't in self.functions, then it was collapsed and we don't have to worry about it.
             if fork in self.functions and len(self.functions[fork].commands) > 0:
                 call += 'run ' + self.call_function(fork)
                 self.add_command(call)

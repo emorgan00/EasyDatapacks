@@ -60,9 +60,9 @@ class Namespace:
                 self.functions['main.load'] = Function(['main', 'load'], {}, [], self, 0, 0, ['main', 'load'], None)
 
             load = self.functions['main.load']
-            commands = [summon_vars(self.pack)]
 
             # summon the .VARS armor stand
+            commands = [summon_vars(self.pack)]
 
             for ref in self.ints:
                 commands.append('scoreboard objectives add ' + ref + ' dummy')
