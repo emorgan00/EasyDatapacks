@@ -583,7 +583,7 @@ class Function:
     def call_loop(self, funcname, call):
 
         func = self.functions[funcname]
-        while func.commands[-1][-2] == 'b':
+        while len(func.commands[-1]) > 2 and func.commands[-1][-2] == 'b':
             newname = 'main.' + func.commands[-1].split(':')[-1]
             func = self.functions[newname]
 
