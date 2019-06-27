@@ -55,6 +55,7 @@ def run(args):
 
         if success:
             print(f'successfully created datapack {os.path.basename(outdir)!r}')
+
     elif args.cmd == "link":
         mcdir = os.getenv("MINECRAFT_DIR")
         if mcdir is not None:
@@ -77,7 +78,7 @@ def run(args):
         )
         os.symlink(args.dir, datapackdir, target_is_directory=True)
         print(f"successfully symlinked {args.dir!r} to {datapackdir!r}")
->>>>>>> Add link command functionality
+
     else:
         print("A command is required", file=sys.stderr)
         parser.print_help(sys.stderr)
