@@ -499,11 +499,11 @@ class Function:
                     else:
                         self.raise_exception('"' + args[i - 1] + '" is not a valid integer variable or constant.')
 
-                    # left side
+                    # right side
                     if refright != None and self.refs[refright] == 'i':
                         varright = refright
                     elif args[i + 1].isdigit():
-                        varright = args[i - 1]
+                        varright = args[i + 1]
                     else:
                         self.raise_exception('"' + args[i + 1] + '" is not a valid integer variable or constant.')
 
