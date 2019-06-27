@@ -55,6 +55,29 @@ def run(args):
 
         if success:
             print(f'successfully created datapack {os.path.basename(outdir)!r}')
+    elif args.cmd == "link":
+        mcdir = os.getenv("MINECRAFT_DIR")
+        if mcdir is not None:
+            pass  # we found it already
+        elif sys.platform.startswith("linux"):
+            mcdir = os.path.expanduser("~/.minecraft")
+        elif sys.platform.startswith("win32"):
+            mcdir = os.path.expandvars("%APPDATA%/.minecraft")
+        elif sys.platform.startswith("darwin"):
+            mcdir = os.path.expanduser("~/Library/Application Support/minecraft")
+        else:
+            print(
+                "Unsupported OS for automatically finding the .minecraft directory, "
+                "please set the $MINECRAFT_DIR environment variable to its location"
+            )
+            sys.exit(1)
+        args.dir = os.path.realpath(args.dir)
+        datapackdir = os.path.join(
+            mcdir, "saves", args.save, "datapacks", os.path.basename(args.dir)
+        )
+        os.symlink(args.dir, datapackdir, target_is_directory=True)
+        print(f"successfully symlinked {args.dir!r} to {datapackdir!r}")
+>>>>>>> Add link command functionality
     else:
         print("A command is required", file=sys.stderr)
         parser.print_help(sys.stderr)
