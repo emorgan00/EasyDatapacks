@@ -63,3 +63,7 @@ def check_int(var, op, val, pack):
         return 'entity @e[name=%s.VARS,scores={%s=%s..}]' % (pack, var, str(int(val) + 1))
     if op == '<':
         return 'entity @e[name=%s.VARS,scores={%s=..%s}]' % (pack, var, str(int(val) - 1))
+
+
+def op_converse(op):
+    return op.replace('>', '@').replace('<', '>').replace('@', '<')

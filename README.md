@@ -332,7 +332,14 @@ def example3:
     as @e unless a <= 0:
         say "integer comparisons can also be used in chained execute statements!"
 ```
-The syntax is always: `<variable> <operator> <constant>`
+Two variables can also be compared:
+```
+def example:
+    a = 10
+    b = 15
+    while a < b:
+        a += 1
+```
 
 ## Integers as Parameters
 

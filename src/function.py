@@ -17,6 +17,9 @@ class Function:
         # master list of all generated vanilla commands in the function
         self.commands = []
 
+        # commands which are needed to process another command, reset every line
+        self.auxcommands = []
+
         # path to this function, e.g. ['main', 'load'] refers to the main.load function
         self.path = path
         self.name = '.'.join(path)
@@ -111,6 +114,14 @@ class Function:
         if out != None:
             self.raise_exception(out)
         self.commands.append(command)
+
+    # adds the command to this function.
+    def auxiliary_command(self, command):
+
+        out = check(command)
+        if out != None:
+            self.raise_exception(out)
+        self.auxcommands.append(command)
 
     def compile(self):
 
@@ -222,6 +233,7 @@ class Function:
         if self.hasbreak or self.hascontinue:
             return
 
+        self.auxcommands = []
         line = self.lines[self.pointer][1]
         tokens = tokenize(line)
 
@@ -360,8 +372,10 @@ class Function:
 
             funcname = self.fork_function('e')
             # setup execution call
-            self.add_command(
-                'execute ' + self.process_tokens(tokens, False, True) + ' run ' + self.call_function(funcname))
+            call = 'execute ' + self.process_tokens(tokens, False, True) + ' run ' + self.call_function(funcname)
+            for c in self.auxcommands:
+                self.commands.append(c)
+            self.add_command(call)
             self.check_break(funcname)
 
         # if/else
@@ -408,6 +422,9 @@ class Function:
             else:
                 call = 'execute unless ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(
                     funcname, True)
+            for c in self.auxcommands:
+                self.add_command(c)
+                self.functions[funcname].add_command(c)
             self.add_command(call)
             self.functions[funcname].call_loop(funcname, call)
             if self.functions[funcname].hasbreak:
@@ -470,16 +487,42 @@ class Function:
             for i in range(1, len(args) - 1):
                 op = args[i]
                 if op in ('<', '>', '==', '<=', '>='):
-                    var = self.reference_path(args[i - 1])
-                    if var is None or self.refs[var] != 'i':
-                        self.raise_exception('"' + args[i - 1] + '" is not a valid integer variable.')
-                    if not args[i + 1].isdigit():
-                        self.raise_exception('"' + args[i + 1] + '" is not an integer at ' + self.name)
+                    refleft = self.reference_path(args[i - 1])
+                    refright = self.reference_path(args[i + 1])
+                    varleft, varright = None, None
+
+                    # left side
+                    if refleft != None and self.refs[refleft] == 'i':
+                        varleft = refleft
+                    elif args[i - 1].isdigit():
+                        varleft = args[i - 1]
+                    else:
+                        self.raise_exception('"' + args[i - 1] + '" is not a valid integer variable or constant.')
+
+                    # left side
+                    if refright != None and self.refs[refright] == 'i':
+                        varright = refright
+                    elif args[i - 1].isdigit():
+                        varright = args[i - 1]
+                    else:
+                        self.raise_exception('"' + args[i - 1] + '" is not a valid integer variable or constant.')
+
                     if i > 1 and not args[i - 2] in ('if', 'unless', 'while', 'whilenot'):
                         self.raise_exception('Integer comparison without a conditional.')
-                    args[i - 1] = check_int(var, op, args[i + 1], self.pack)
-                    args[i] = None
-                    args[i + 1] = None
+
+                    if varleft.isdigit() and varright.isdigit():
+                        self.raise_exception('Cannot compare two constants.')
+                    elif varleft.isdigit():
+                        args[i - 1] = check_int(varright, op_converse(op), varleft, self.pack)
+                    elif varright.isdigit():
+                        args[i - 1] = check_int(varleft, op, varright, self.pack)
+                    else:
+                        self.namespace.ints.add(varleft + '.TEST')
+                        self.auxiliary_command(augment_int(varleft + '.TEST', varleft, '=', self.pack))
+                        self.auxiliary_command(augment_int(varleft + '.TEST', varright, '-=', self.pack))
+                        args[i - 1] = check_int(varleft + '.TEST', op, '0', self.pack)
+
+                    args[i], args[i + 1] = None, None
 
         tokens = tokenize(' '.join(a for a in args if a is not None))
 
