@@ -61,6 +61,12 @@ class Function:
         self.hasbreak = False
         self.hascontinue = False
 
+        # update the namespace intmap, this must be done in __init__ because other functions may call this function
+        # before it has been compiled.
+        for p in self.params:
+            if self.params[p] == 'i':
+                self.namespace.add_int(self.name + '.' + p)
+
     def __str__(self):
 
         out = self.name[5:] + ': '
@@ -136,9 +142,6 @@ class Function:
         for p in self.params:
             self.refs[self.name + '.' + p] = self.params[p]
             self.locals.append(self.name + '.' + p)
-
-            if self.params[p] == 'i':
-                self.namespace.add_int(self.name + '.' + p)
 
         # pre-process function headers:
         for i, p in enumerate(self.lines[self.pointer:]):
@@ -390,7 +393,7 @@ class Function:
             self.add_command(call)
             self.check_break(funcname)
 
-        # if/else
+        # else
         elif tokens[0].strip() == 'else':
             if tokens[-1] == ':':
                 tokens.pop()  # remove a trailing ':'
@@ -582,6 +585,9 @@ class Function:
         try:
             self.functions[funcname] = Function(funcpath, {}, self.lines, self.namespace, newpointer, newdepth,
                                                 self.infunc, inloop)
+            # if this is a break-chain, we should carry over the pastline because its the same level of indentation
+            if code == 'b':
+                self.functions[funcname].pastline = self.lines[self.pointer][1]
             self.functions[funcname].compile()
         except CompilationSyntaxError as e:
             if code != 'b':
