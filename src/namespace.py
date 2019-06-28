@@ -21,6 +21,9 @@ class Namespace:
         self.consts = []
         self.ints = set()
 
+        # to comply with objectives being no longer than 16 chars
+        self.intmap = {}
+
     def add_constant(self, value):
 
         self.consts.append(value)
@@ -65,7 +68,7 @@ class Namespace:
             commands = [summon_vars(self.pack)]
 
             for ref in self.ints:
-                commands.append('scoreboard objectives add ' + ref + ' dummy')
+                commands.append('scoreboard objectives add ' + self.intmap[ref] + ' dummy')
 
             # handle constants
             for i, val in enumerate(self.consts):

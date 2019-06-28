@@ -89,6 +89,11 @@ class Function:
                 return test_path
         return None
 
+    def namespace_int(self, ref):
+
+        self.namespace.ints.add(ref)
+        self.namespace.intmap[ref] = (ref + '.' + str(len(self.namespace.intmap)))[-16:]
+
     # will create an exception with line number and function name
     # syntaxerror means we are dealing with missing content
     def raise_exception(self, string, syntaxerror=False):
@@ -138,7 +143,7 @@ class Function:
             self.locals.append(self.name + '.' + p)
 
             if self.params[p] == 'i':
-                self.namespace.ints.add(self.name + '.' + p)
+                self.namespace_int(self.name + '.' + p)
 
         # pre-process function headers:
         for i, p in enumerate(self.lines[self.pointer:]):
@@ -222,7 +227,7 @@ class Function:
                 return out + (' ' if expression[-1] == ' ' else '')
 
             elif self.refs[path] == 'i':  # integer variable
-                return select_int(path, self.pack) + (' ' if expression[-1] == ' ' else '')
+                return select_int(path, self.namespace) + (' ' if expression[-1] == ' ' else '')
 
         # a simple constant
         return expression
@@ -264,13 +269,13 @@ class Function:
 
             if expression.isdigit():  # an integer constant
                 self.refs[dest] = 'i'
-                self.add_command(assign_int(expression, dest, self.pack))
-                self.namespace.ints.add(dest)
+                self.namespace_int(dest)
+                self.add_command(assign_int(expression, dest, self.namespace))
 
             elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
                 self.refs[dest] = 'i'
-                self.add_command(augment_int(dest, refpath, '=', self.pack))
-                self.namespace.ints.add(dest)
+                self.namespace_int(dest)
+                self.add_command(augment_int(dest, refpath, '=', self.namespace))
 
             elif expression[0] == '@':  # an entity
                 self.refs[dest] = 'e'
@@ -313,19 +318,19 @@ class Function:
             inref = self.reference_path(expression)
             if inref is None and expression.isdigit():  # int constant
                 if op == '+=':
-                    self.add_command(add_int(expression, dest, self.pack))
+                    self.add_command(add_int(expression, dest, self.namespace))
                 elif op == '-=':
-                    self.add_command(sub_int(expression, dest, self.pack))
+                    self.add_command(sub_int(expression, dest, self.namespace))
                 else:
                     var2 = self.namespace.add_constant(expression)
-                    self.add_command(augment_int(dest, var2, op, self.pack))
+                    self.add_command(augment_int(dest, var2, op, self.namespace))
 
             elif inref is None or self.refs[inref] != 'i':
                 self.raise_exception('Cannot perform augmented assignment with "' + expression + '"')
 
             # valid variable
             else:
-                self.add_command(augment_int(dest, inref, op, self.pack))
+                self.add_command(augment_int(dest, inref, op, self.namespace))
 
         # increment / decrement
         elif len(tokens) > 2 and ''.join(tokens[1:]) in ('++', '--'):
@@ -335,9 +340,9 @@ class Function:
             if ref == None:
                 self.raise_exception('Cannot perform augmented assignment on "' + var + '"')
             elif ''.join(tokens[1:]) == '++':
-                self.add_command(add_int('1', ref, self.pack))
+                self.add_command(add_int('1', ref, self.namespace))
             else:
-                self.add_command(sub_int('1', ref, self.pack))
+                self.add_command(sub_int('1', ref, self.namespace))
 
         # definining a new function
         elif tokens[0].strip() == 'def':
@@ -369,10 +374,10 @@ class Function:
 
                 elif func.params[p] == 'i':  # in integer
                     if expression.isdigit():  # constant int
-                        self.add_command(assign_int(expression, func.name + '.' + p, self.pack))
+                        self.add_command(assign_int(expression, func.name + '.' + p, self.namespace))
                     elif expression[0] == '@':  # reference to int
                         self.add_command(
-                            augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.pack))
+                            augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
 
             self.add_command(self.call_function(funcpath))
 
@@ -525,14 +530,14 @@ class Function:
                     if varleft.isdigit() and varright.isdigit():
                         self.raise_exception('Cannot compare two constants.')
                     elif varleft.isdigit():
-                        args[i - 1] = check_int(varright, op_converse(op), varleft, self.pack)
+                        args[i - 1] = check_int(varright, op_converse(op), varleft, self.namespace)
                     elif varright.isdigit():
-                        args[i - 1] = check_int(varleft, op, varright, self.pack)
+                        args[i - 1] = check_int(varleft, op, varright, self.namespace)
                     else:
-                        self.namespace.ints.add(varleft + '.TEST')
-                        self.auxiliary_command(augment_int(varleft + '.TEST', varleft, '=', self.pack))
-                        self.auxiliary_command(augment_int(varleft + '.TEST', varright, '-=', self.pack))
-                        args[i - 1] = check_int(varleft + '.TEST', op, '0', self.pack)
+                        self.namespace_int(varleft + '.TEST')
+                        self.auxiliary_command(augment_int(varleft + '.TEST', varleft, '=', self.namespace))
+                        self.auxiliary_command(augment_int(varleft + '.TEST', varright, '-=', self.namespace))
+                        args[i - 1] = check_int(varleft + '.TEST', op, '0', self.namespace)
 
                     args[i], args[i + 1] = None, None
 
