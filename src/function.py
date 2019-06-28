@@ -89,11 +89,6 @@ class Function:
                 return test_path
         return None
 
-    def namespace_int(self, ref):
-
-        self.namespace.ints.add(ref)
-        self.namespace.intmap[ref] = (ref + '.' + str(len(self.namespace.intmap)))[-16:]
-
     # will create an exception with line number and function name
     # syntaxerror means we are dealing with missing content
     def raise_exception(self, string, syntaxerror=False):
@@ -143,7 +138,7 @@ class Function:
             self.locals.append(self.name + '.' + p)
 
             if self.params[p] == 'i':
-                self.namespace_int(self.name + '.' + p)
+                self.namespace.add_int(self.name + '.' + p)
 
         # pre-process function headers:
         for i, p in enumerate(self.lines[self.pointer:]):
@@ -269,12 +264,12 @@ class Function:
 
             if expression.isdigit():  # an integer constant
                 self.refs[dest] = 'i'
-                self.namespace_int(dest)
+                self.namespace.add_int(dest)
                 self.add_command(assign_int(expression, dest, self.namespace))
 
             elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
                 self.refs[dest] = 'i'
-                self.namespace_int(dest)
+                self.namespace.add_int(dest)
                 self.add_command(augment_int(dest, refpath, '=', self.namespace))
 
             elif expression[0] == '@':  # an entity
@@ -534,7 +529,7 @@ class Function:
                     elif varright.isdigit():
                         args[i - 1] = check_int(varleft, op, varright, self.namespace)
                     else:
-                        self.namespace_int(varleft + '.TEST')
+                        self.namespace.add_int(varleft + '.TEST')
                         self.auxiliary_command(augment_int(varleft + '.TEST', varleft, '=', self.namespace))
                         self.auxiliary_command(augment_int(varleft + '.TEST', varright, '-=', self.namespace))
                         args[i - 1] = check_int(varleft + '.TEST', op, '0', self.namespace)

@@ -27,7 +27,14 @@ class Namespace:
     def add_constant(self, value):
 
         self.consts.append(value)
-        return 'CONSTANT.' + str(len(self.consts) - 1)
+        ref = 'CONSTANT.' + str(len(self.consts) - 1)
+        self.intmap[ref] = ref[-16:]
+        return ref
+
+    def add_int(self, ref):
+
+        self.ints.add(ref)
+        self.intmap[ref] = (ref + '.' + str(len(self.intmap)))[-16:]
 
     def compile(self, verbose):
 
@@ -73,7 +80,7 @@ class Namespace:
             # handle constants
             for i, val in enumerate(self.consts):
                 commands.append('scoreboard objectives add CONSTANT.' + str(i) + ' dummy')
-                commands.append(assign_int(val, 'CONSTANT.' + str(i), self.pack))
+                commands.append(assign_int(val, 'CONSTANT.' + str(i), self))
 
             # add the new commands to the beginning of the "load" function
             load.commands = commands + load.commands
