@@ -487,3 +487,6 @@ Here are a few examples of fully working datapacks written with EasyDatapacks. (
 
 [movingblocks](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/movingblocks.mcf)
 (this will implement moving blocks which can be pushed along the grid, and slide on ice)
+
+[locks](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/locks.mcf)
+(this will implement iron and gold locks, which can be opened with iron and gold keys)
