@@ -33,8 +33,9 @@ class Namespace:
 
     def add_int(self, ref):
 
-        self.ints.add(ref)
-        self.intmap[ref] = (ref + '.' + str(len(self.intmap)))[-16:]
+        if ref not in self.ints:
+            self.ints.add(ref)
+            self.intmap[ref] = (ref + '.' + str(len(self.intmap)))[-16:]
 
     def compile(self, verbose):
 
@@ -59,14 +60,16 @@ class Namespace:
                 unused.append(f)
         for f in unused:
             self.functions.pop(f)
-            if verbose:
-                print('collapsed branch ' + f)
+
+        if verbose and len(unused) > 0:
+            print('collapsing branches...')
+            print('\n\t' + ', '.join(f[5:] for f in unused))
 
         # handle scoreboard variables
         if len(self.ints) > 0:
 
             if 'main.load' not in self.functions:
-                print('automatically creating missing load function...')
+                print('\nautomatically creating missing load function...')
                 self.functions['main.load'] = Function(['main', 'load'], {}, [], self, 0, 0, ['main', 'load'], None)
 
             load = self.functions['main.load']
