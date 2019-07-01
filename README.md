@@ -85,22 +85,33 @@ def example:
     else:
         tellraw @p “Maybe another time.”
 ```
-Please note that else only accompanies if. It doesn’t work with unless, and it doesn’t work with chained if statements. Here are some examples of where else would not work:
+Else will also match with any other implicit execute statement. The way it works is simple: If the previous block of code is never run, then the else block will run.
 ```
-def example1:
-    if block 0 0 0 diamond_ore if entity @p:
-        tellraw @p “Yay! Diamonds!”
+def example:
+    as @e:
+        say "Here I am!"
     else:
-        tellraw @p “Maybe another time.”
+        tellraw @a “There are no entities.”
 ```
-(note: this would still compile, but it wouldn’t behave as expected. It would only flip the block check, and not the entity check)
+Else can be used along with other implicit executions, though it must come first.
 ```
-def example2:
-    as @p if block 0 0 0 diamond_ore:
-        tellraw @p “Yay! Diamonds!”
+def example:
+    as @e[type=!Player]:
+        say "Here I am!"
+    else as @a:
+        say “There are no entities.”
+```
+This will also allow you to create chained if-else statments, like follows:
+```
+def example:
+    if entity @p[name=admin]:
+        say "Hello, admin."
+    else if entity @p:
+        say "Hello, player."
     else:
-        tellraw @p “Maybe another time.” 
+        say "Whoops, looks like nobody is here."
 ```
+
 ## Entity Variables
 
 Suppose you want a function that chooses a random player, and then gives them a piece of bread and a sword. How would you write this using normal commands?

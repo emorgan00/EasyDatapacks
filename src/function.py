@@ -200,6 +200,22 @@ class Function:
 
             self.refs.pop(ref)
 
+        # post-process, add in the function calls
+        for i, cmd in enumerate(self.commands):
+            index = cmd.find('!callfunction')
+            if index == -1:
+                continue
+
+            funcname = cmd[index:].split(' ')[1]
+            func = self.functions[funcname]
+
+            if len(func.commands) > 1:
+                func.used = True
+                self.commands[i] = cmd[:index] + 'function ' + self.pack + ':' + funcname[5:]
+            else:
+                # if a function is only 1 command, just execute it directly.
+                self.commands[i] = cmd[:index] + func.commands[0]
+
     # called on a single token. Detects references and handles clarifiers. For multi-token strings, use process_tokens.
     def process_expression(self, expression):
 
@@ -398,14 +414,33 @@ class Function:
             if tokens[-1] == ':':
                 tokens.pop()  # remove a trailing ':'
 
-            if len(tokens) > 1:
-                self.raise_exception('"else" does not take any additional parameters.')
+            pastline = tokenize(self.pastline)
+            if len(pastline) == 0 or not pastline[0].strip() in (
+                'as', 'at', 'positioned', 'align', 'facing', 'rotated', 'in', 'anchored', 'if', 'unless', 'store', 'else'):
+                self.raise_exception('"else" without a matching execution block.')
 
-            if self.pastline[:3] != 'if ':
-                self.raise_exception('"else" without matching "if"')
-            self.lines[self.pointer] = (self.lines[self.pointer][0], 'unless' + self.pastline[2:])
-            self.process_line()
-            return
+            # else block content
+            funcname = self.fork_function('e')
+
+            # we know the pastline is valid, otherwise it would have already thrown an exception last time
+            pastfuncname = self.function_path('e'+str(self.relcounter-2))
+            entity = '@e[tag=' + funcname + '.ELSE]'
+            summon = 'execute unless entity ' + entity + ' summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + funcname + '.ELSE"]}'
+            self.functions[pastfuncname].commands.insert(0, summon)
+
+            call = 'execute unless entity ' + entity + ' '
+
+            # add additional execute params to the call
+            params = self.process_tokens(tokens[1:], False, True)
+            if len(params) == 0:
+                call += 'run ' + self.call_function(funcname)
+            else:
+                call += params + ' run ' + self.call_function(funcname)  
+            for c in self.auxcommands:
+                self.commands.append(c)
+            self.functions[funcname].commands.insert(0, 'kill '+ entity)
+            self.add_command(call)
+            self.check_break(funcname)
 
         # repeat
         elif tokens[0].strip() == 'repeat':
@@ -433,10 +468,10 @@ class Function:
             # setup execution call
             if tokens[0].strip() == 'while':
                 call = 'execute if ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(
-                    funcname, True)
+                    funcname)
             else:
                 call = 'execute unless ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(
-                    funcname, True)
+                    funcname)
             for c in self.auxcommands:
                 self.add_command(c)
                 self.functions[funcname].add_command(c)
@@ -596,19 +631,10 @@ class Function:
         self.relcounter += 1
         return funcname
 
-    # this will call a sub-function of name <funcname>. <nocollapse> will disable collapsing a 1-line function
-    def call_function(self, funcname, nocollapse=False):
+    # this will call a sub-function of name <funcname>
+    def call_function(self, funcname):
 
-        func = self.functions[funcname]
-        if len(func.commands) > 1 or nocollapse:
-            func.used = True
-            return 'function ' + self.pack + ':' + funcname[5:]
-        elif len(func.commands) == 1:
-            # if a function is only 1 command, just execute it directly.
-            return func.commands[0]
-        else:
-            func.used = True
-            return 'function ' + self.pack + ':' + funcname[5:]
+        return '!callfunction '+funcname
 
     # this is called after spawning a forked function. It checks if the function has a break/continue,
     # and will branch the current function accordingly.
