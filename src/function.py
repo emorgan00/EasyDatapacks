@@ -425,7 +425,7 @@ class Function:
             # we know the pastline is valid, otherwise it would have already thrown an exception last time
             pastfuncname = self.function_path('e'+str(self.relcounter-2))
             entity = '@e[tag=' + funcname + '.ELSE]'
-            summon = 'execute unless entity ' + entity + ' summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + funcname + '.ELSE"]}'
+            summon = 'execute unless entity ' + entity + ' run summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + funcname + '.ELSE"]}'
             self.functions[pastfuncname].commands.insert(0, summon)
 
             call = 'execute unless entity ' + entity + ' '
@@ -438,8 +438,8 @@ class Function:
                 call += params + ' run ' + self.call_function(funcname)  
             for c in self.auxcommands:
                 self.commands.append(c)
-            self.functions[funcname].commands.insert(0, 'kill '+ entity)
             self.add_command(call)
+            self.add_command('kill '+ entity)
             self.check_break(funcname)
 
         # repeat

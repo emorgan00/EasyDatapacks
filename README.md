@@ -101,17 +101,6 @@ def example:
     else as @a:
         say “There are no entities.”
 ```
-This will also allow you to create chained if-else statments, like follows:
-```
-def example:
-    if entity @p[name=admin]:
-        say "Hello, admin."
-    else if entity @p:
-        say "Hello, player."
-    else:
-        say "Whoops, looks like nobody is here."
-```
-
 ## Entity Variables
 
 Suppose you want a function that chooses a random player, and then gives them a piece of bread and a sword. How would you write this using normal commands?
