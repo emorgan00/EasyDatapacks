@@ -81,8 +81,6 @@ class Namespace:
                 if index == -1:
                     continue
 
-                print(index)
-
                 funcname = cmd[index:].split(' ')[1]
                 callfunc = func.functions[funcname]
 
