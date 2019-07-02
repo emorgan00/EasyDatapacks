@@ -45,7 +45,11 @@ def augment_int(var1, var2, op, namespace):
 
 
 def select_int(var, namespace):
-    return '@e[name=%s.VARS,limit=1] %s' % (namespace.pack, var)
+    return '@e[name=%s.VARS,limit=1] %s' % (namespace.pack, namespace.intmap[var])
+
+
+def text_int(var, namespace):
+    return '{"score":{"name":"@e[name=%s.VARS]","objective":"%s"}}' % (namespace.pack, namespace.intmap[var])
 
 
 def summon_vars(pack):
