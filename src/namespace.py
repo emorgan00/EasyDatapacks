@@ -72,6 +72,27 @@ class Namespace:
 
         Function(['main'], {}, lines, self, 0, 0, None, None).compile()
 
+        # post-process, add in the function calls
+        for funcname in self.functions:
+            func = self.functions[funcname]
+            
+            for i, cmd in enumerate(func.commands):
+                index = cmd.find('!callfunction')
+                if index == -1:
+                    continue
+
+                print(index)
+
+                funcname = cmd[index:].split(' ')[1]
+                callfunc = func.functions[funcname]
+
+                if len(func.commands) > 1:
+                    callfunc.used = True
+                    func.commands[i] = cmd[:index] + 'function ' + self.pack + ':' + funcname[5:]
+                else:
+                    # if a function is only 1 command, just execute it directly.
+                    func.commands[i] = cmd[:index] + callfunc.commands[0]
+
         # prune unused functions
         unused = []
         for f in self.functions:
@@ -106,26 +127,6 @@ class Namespace:
 
             # add the new commands to the beginning of the "load" function
             load.commands = commands + load.commands
-
-        # post-process, add in the function calls
-        for funcname in self.functions:
-            func = self.functions[funcname]
-            for i, cmd in enumerate(func.commands):
-                index = cmd.find('!callfunction')
-                if index == -1:
-                    continue
-
-                print(index)
-
-                funcname = cmd[index:].split(' ')[1]
-                callfunc = func.functions[funcname]
-
-                if len(func.commands) > 1:
-                    callfunc.used = True
-                    func.commands[i] = cmd[:index] + 'function ' + self.pack + ':' + funcname[5:]
-                else:
-                    # if a function is only 1 command, just execute it directly.
-                    func.commands[i] = cmd[:index] + callfunc.commands[0]
 
         if verbose:
             print('')
