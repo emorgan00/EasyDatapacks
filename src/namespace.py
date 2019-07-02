@@ -45,11 +45,28 @@ class Namespace:
                 name = file.split('/')[-1].split('\\')[-1].split('.')[0]
                 rawlines = f.readlines()
 
+                # auto-detect tab width
+                tab_width = 4
+                for line in rawlines:
+                    spaces = 0
+                    for ch in line:
+                        if ch == ' ':
+                            spaces += 1
+                        else:
+                            break
+                    if spaces > 0:
+                        tab_width = spaces
+                        break
+
                 # pre-processing empty lines and comments
                 lines = []
                 for i, line in enumerate(rawlines):
                     if len(line.strip()) > 0 and line.strip()[0] != '#':
-                        lines.append((tab_depth(line), line.strip(), i + 1))
+                        td = tab_depth(line, tab_width)
+                        if td == None:
+                            out = 'Error at line %i: "%s"\n\tUnknown indentation. There may be a missing or extra space character.' % (i, line.strip())
+                            raise CompilationSyntaxError(out)
+                        lines.append((td, line.strip(), i + 1))
 
                 Function(['main'], {}, lines, self, 0, 0, None, None).compile()
 

@@ -35,7 +35,7 @@ def broad_tokenize(line):
 
 
 # return the level of indentation of the line
-def tab_depth(line):
+def tab_depth(line, tab_width):
     t, s = 0, 0
     for ch in line:
         if ch == '\t':
@@ -45,9 +45,9 @@ def tab_depth(line):
         else:
             break
 
-    if s % 4 != 0:
-        raise Exception('Invalid indentation.')
-    return t + s / 4
+    if s % tab_width != 0:
+        return None
+    return t + s / tab_width
 
 
 # returns whether this is a valid name for a funcname or parameter
