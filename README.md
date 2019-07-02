@@ -162,7 +162,7 @@ def example:
     player = @p
     tellraw player “hi”
 ```
-actually won’t work. The function will fail to load because you can’t run tellraw on entities. To solve this problem, you need to use clarifiers. A clarifier is a # followed by p, to indicate players, or 1, to indicate a single entity. You can combine both as #1p or #p1. You write it directly after the variable name, like this:
+actually won’t work. The function will fail to load because you can’t run tellraw on entities. To solve this problem, you need to use clarifiers. A clarifier is a # followed by some letters indicating what you want to clarify. For entities, this can be `p`, to indicate players, or `1`, to indicate a single entity. You can combine both as `#1p` or `#p1`. You write it directly after the variable name, like this:
 ```
 def example1:
     player = @p
@@ -171,7 +171,20 @@ def example2:
     target = @r
     tp @a target#1
 ```
-We had to use #1 on the target variable because you can only tp to a single entity.
+We had to use `#1` on the target variable because you can only tp to a single entity.
+
+The situation may also arise where you don't want a variable to be replaced with an entity query. For example:
+```
+def say_my_name player:
+    tellraw @a [{"text":"I am the player, and my name is "},{"selector":"player"}]
+```
+The "player" variable will be detected twice, although the first one is unintentional. The output will end up looking something like this:
+`I am a @e[...some random stuff...], and my name is emorgan00`
+The solution is to use the `#v` clarifier, which tells the compiler to just substitute the variable name instead of a selector:
+```
+def say_my_name player:
+    tellraw @a [{"text":"I am the player#v, and my name is "},{"selector":"player"}]
+```
 
 When using clarifiers combined with selectors, the syntax should be as follows:
 ```
@@ -341,6 +354,17 @@ def example:
         a += 1
 ```
 
+## Integer Clarifiers
+
+There are clarifiers for integer variables just like for entity variables. Integer variables can use the `#v` clarifie, but also have a `#t` clarifier, which stands for "text". Normally an integer variable will evaluate to a selector and score, for use in hybrid scoreboard commands etc. When you want to actually print a score to the chat as part of a JSON array, the syntax is different. Using the `#t` clarifier will cause the variable to be replaced with a JSON component which returns the score as text:
+```
+def example:
+    a = 100
+    tellraw @a ["The value of a#v is currently ", a#t]
+```
+This would cause the following to be printed to chat:
+`The value of a is currently 100`
+
 ## Integers as Parameters
 
 Integer parameters work exactly as you might expect. When calling a function that has an integer parameter, it looks something like this:
@@ -354,7 +378,7 @@ def example2:
 ```
 Both of the above are valid.
 
-Defining a function that takes an integer as a parameter is a little more complicated, as you will need to use clarifiers, since all parameters refer to entities by default. Tagging a parameter with #i will cause it to refer to an integer.
+Defining a function that takes an integer as a parameter is a little more complicated, as you will need to use clarifiers, since all parameters refer to entities by default. Tagging a parameter with `#i` will cause it to refer to an integer.
 ```
 def speak_n_times n#i:
     while n > 0:
@@ -364,7 +388,7 @@ def speak_n_times n#i:
 def example:
     speak_n_times 10
 ```
-For readability purposes, it is recommended that you also tag you entity parameters with #e, like this:
+For readability purposes, it is recommended that you also tag you entity parameters with `#e`, like this:
 ```
 def greet_n_times player#e n#i:
     while n > 0:
@@ -409,14 +433,6 @@ def function var
         say Hello
 ```
 Again, some users may find it easier to omit colons for implicit execute statements (such as "as var" above), but this is not considered part of the formal syntax protocol for EasyDatapacks.
-
-When using parameters or variables as selectors in a JSON array, please be wary that including a variable name as part of a piece of normal text may produce uninteded results. For example, the following function:
-```
-def say_my_name player:
-    tellraw @a [{"text":"I am a player, and my name is "},{"selector":"player"}]
-```
-The "player" variable will be detected twice, although the first one is unintentional. The output will end up looking something like this:
-`I am a @e[...some random stuff...], and my name is emorgan00`
 
 # Compiling
 
