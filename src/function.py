@@ -239,12 +239,29 @@ class Function:
                         out = select_player(path)
                     elif clarifiers in ('1p', 'p1'):
                         out = select_player1(path)
+                    elif clarifiers == 'v':
+                        out = ref
+                    else:
+                        self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
                 else:
                     out = select_entity(path)
                 return out + (' ' if expression[-1] == ' ' else '')
 
             elif self.refs[path] == 'i':  # integer variable
-                return select_int(path, self.namespace) + (' ' if expression[-1] == ' ' else '')
+                out = ''
+                if len(components) == 2:
+                    clarifiers = expression.strip().split('#')[1]
+                    if clarifiers == '':
+                        out = select_int(path, self.namespace)
+                    elif clarifiers == 't':
+                        out = text_int(path, self.namespace)
+                    elif clarifiers == 'v':
+                        out = ref
+                    else:
+                        self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
+                else:
+                    out = select_int(path, self.namespace)
+                return out + (' ' if expression[-1] == ' ' else '')
 
         # a simple constant
         return expression
