@@ -105,7 +105,10 @@ class Function:
         else:
             out = 'Error at line '
 
-        out += '%i: "%s"\n\t' % (self.lines[self.pointer][2], self.lines[self.pointer][1])
+        try:
+            out += '%i: "%s"\n\t' % (self.lines[self.pointer][2], self.lines[self.pointer][1])
+        except IndexError:
+            out = 'Error at line 0: ""\n\t'
         out += string
 
         if syntaxerror:
