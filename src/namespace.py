@@ -84,7 +84,7 @@ class Namespace:
                 funcname = cmd[index:].split(' ')[1]
                 callfunc = func.functions[funcname]
 
-                if len(func.commands) > 1:
+                if len(callfunc.commands) > 1:
                     callfunc.used = True
                     func.commands[i] = cmd[:index] + 'function ' + self.pack + ':' + funcname[5:]
                 else:
