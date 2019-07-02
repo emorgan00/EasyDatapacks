@@ -39,36 +39,38 @@ class Namespace:
 
     def compile(self, verbose):
 
+        rawlines = []
+
         # compile all files
         for file in self.files:
             with open(file, 'r') as f:
                 name = file.split('/')[-1].split('\\')[-1].split('.')[0]
-                rawlines = f.readlines()
+                rawlines += f.readlines()
 
-                # auto-detect tab width
-                tab_width = 4
-                for line in rawlines:
-                    spaces = 0
-                    for ch in line:
-                        if ch == ' ':
-                            spaces += 1
-                        else:
-                            break
-                    if spaces > 0:
-                        tab_width = spaces
-                        break
+        # auto-detect tab width
+        tab_width = 4
+        for line in rawlines:
+            spaces = 0
+            for ch in line:
+                if ch == ' ':
+                    spaces += 1
+                else:
+                    break
+            if spaces > 0:
+                tab_width = spaces
+                break
 
-                # pre-processing empty lines and comments
-                lines = []
-                for i, line in enumerate(rawlines):
-                    if len(line.strip()) > 0 and line.strip()[0] != '#':
-                        td = tab_depth(line, tab_width)
-                        if td == None:
-                            out = 'Error at line %i: "%s"\n\tUnknown indentation. There may be a missing or extra space character.' % (i, line.strip())
-                            raise CompilationSyntaxError(out)
-                        lines.append((td, line.strip(), i + 1))
+        # pre-processing empty lines and comments
+        lines = []
+        for i, line in enumerate(rawlines):
+            if len(line.strip()) > 0 and line.strip()[0] != '#':
+                td = tab_depth(line, tab_width)
+                if td == None:
+                    out = 'Error at line %i: "%s"\n\tUnknown indentation. There may be a missing or extra space character.' % (i, line.strip())
+                    raise CompilationSyntaxError(out)
+                lines.append((td, line.strip(), i + 1))
 
-                Function(['main'], {}, lines, self, 0, 0, None, None).compile()
+        Function(['main'], {}, lines, self, 0, 0, None, None).compile()
 
         # prune unused functions
         unused = []
@@ -104,6 +106,26 @@ class Namespace:
 
             # add the new commands to the beginning of the "load" function
             load.commands = commands + load.commands
+
+        # post-process, add in the function calls
+        for funcname in self.functions:
+            func = self.functions[funcname]
+            for i, cmd in enumerate(func.commands):
+                index = cmd.find('!callfunction')
+                if index == -1:
+                    continue
+
+                print(index)
+
+                funcname = cmd[index:].split(' ')[1]
+                callfunc = func.functions[funcname]
+
+                if len(func.commands) > 1:
+                    callfunc.used = True
+                    func.commands[i] = cmd[:index] + 'function ' + self.pack + ':' + funcname[5:]
+                else:
+                    # if a function is only 1 command, just execute it directly.
+                    func.commands[i] = cmd[:index] + callfunc.commands[0]
 
         if verbose:
             print('')

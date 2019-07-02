@@ -203,22 +203,6 @@ class Function:
 
             self.refs.pop(ref)
 
-        # post-process, add in the function calls
-        for i, cmd in enumerate(self.commands):
-            index = cmd.find('!callfunction')
-            if index == -1:
-                continue
-
-            funcname = cmd[index:].split(' ')[1]
-            func = self.functions[funcname]
-
-            if len(func.commands) > 1:
-                func.used = True
-                self.commands[i] = cmd[:index] + 'function ' + self.pack + ':' + funcname[5:]
-            else:
-                # if a function is only 1 command, just execute it directly.
-                self.commands[i] = cmd[:index] + func.commands[0]
-
     # called on a single token. Detects references and handles clarifiers. For multi-token strings, use process_tokens.
     def process_expression(self, expression):
 
