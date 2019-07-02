@@ -24,13 +24,27 @@ def tokenize(line):
 
 # returns a list of the separate arguments in a string
 def broad_tokenize(line):
-    stack = []
-    tokens = line.split(' ')
+    tokens = tokenize(line)
 
-    for token in tokens:
-        if len(token) > 0:
-            stack.append(token)
+    stack, token, depth, quote = [], '', 0, False
 
+    for subtoken in tokens:
+        token += subtoken
+
+        if subtoken in '"\'':
+            quote = not quote
+        elif subtoken in '[{':
+            depth += 1
+        elif subtoken in ']}':
+            depth -= 1
+
+        if depth == 0 and not quote and token[-1] == ' ':
+            if len(token.strip()) > 0:
+                stack.append(token.strip())
+                token = ''
+
+    if len(token) > 0:
+        stack.append(token)
     return stack
 
 
