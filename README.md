@@ -431,7 +431,7 @@ To use the command line interface, run:
 
 `$ python3 src/ build -o <destination-folder> <input-file>`
 
-This will take the file in <input-file> and compile it into a datapack located at <destination-folder>. Here is an example of what this might look like:
+This will take the file in `input-file` and compile it into a datapack located at `destination-folder`. Here is an example of what this might look like:
 
 `$ python3 src/ build -o path/to/MyWorld/datapacks/mydatapack path/to/mydatapack.mcf`
 
