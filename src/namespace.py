@@ -63,12 +63,22 @@ class Namespace:
         # pre-processing empty lines and comments
         lines = []
         for i, line in enumerate(rawlines):
-            if len(line.strip()) > 0 and line.strip()[0] != '#':
-                td = tab_depth(line, tab_width)
-                if td == None:
-                    out = 'Error at line %i: "%s"\n\tUnknown indentation. There may be a missing or extra space character.' % (i, line.strip())
-                    raise CompilationSyntaxError(out)
-                lines.append((td, line.strip(), i + 1))
+
+            td = tab_depth(line, tab_width)
+            tokens = broad_tokenize(line)
+
+            for j, token in enumerate(tokens):
+                if token[0] == '#':
+                    line = ' '.join(tokens[:j])
+                    break
+
+            if len(line.strip()) == 0:
+                continue
+
+            if td == None:
+                out = 'Error at line %i: "%s"\n\tUnknown indentation. There may be a missing or extra space character.' % (i, line.strip())
+                raise CompilationSyntaxError(out)
+            lines.append((td, line.strip(), i + 1))
 
         Function(['main'], {}, lines, self, 0, 0, None, None).compile()
 
@@ -76,20 +86,8 @@ class Namespace:
         for funcname in self.functions:
             func = self.functions[funcname]
             
-            for i, cmd in enumerate(func.commands):
-                index = cmd.find('!callfunction')
-                if index == -1:
-                    continue
-
-                funcname = cmd[index:].split(' ')[1]
-                callfunc = func.functions[funcname]
-
-                if len(callfunc.commands) > 1:
-                    callfunc.used = True
-                    func.commands[i] = cmd[:index] + 'function ' + self.pack + ':' + funcname[5:]
-                else:
-                    # if a function is only 1 command, just execute it directly.
-                    func.commands[i] = cmd[:index] + callfunc.commands[0]
+            for i, line in enumerate(func.commands):
+                func.commands[i] = self.post_process_line(line)
 
         # prune unused functions
         unused = []
@@ -130,3 +128,21 @@ class Namespace:
             print('')
             for f in self.functions:
                 print(self.functions[f])
+
+    def post_process_line(self, line):
+
+        # function call
+        index = line.find('!callfunction')
+        if index != -1:
+
+            callfuncname = line[index:].split(' ')[1]
+            callfunc = self.functions[callfuncname]
+
+            if len(callfunc.commands) > 1:
+                callfunc.used = True
+                return line[:index] + 'function ' + self.pack + ':' + callfuncname[5:]
+            else:
+                # if a function is only 1 command, just execute it directly.
+                return line[:index] + self.post_process_line(callfunc.commands[0])
+
+        return line
