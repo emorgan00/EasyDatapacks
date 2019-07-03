@@ -297,7 +297,8 @@ class Function:
 
             elif expression[0] == '@':  # an entity
                 self.refs[dest] = 'e'
-                self.add_command(assign_entity(expression, dest))
+                if expression != '@':
+                    self.add_command(assign_entity(expression, dest))
                 # special case: assigning as a summon
                 if expression == select_entity('assign'):
                     self.add_command(clear_tag('assign'))
