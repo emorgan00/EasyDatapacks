@@ -263,21 +263,27 @@ note: If you are trying to use a repeat loop which repeats many times, consider 
 
 ## While Loops
 
-Most programming languages have some sort of “while” loop. EasyDatapacks also implements a while loop, which works just like “if”:
+Most programming languages have some sort of `while` loop. EasyDatapacks also implements a while loop, which works just like `if`:
+```
+def goforward:
+    while entity @p:
+        say "yep, @p is here"
+```
+There is also a `whilenot` keyword which works just like `unless`:
+```
+def goforward:
+    whilenot block 0 0 0 stone:
+        say "0 0 0 isn't stone"
+```
+**Warning!** For people who are less experienced with programming, please be very careful when using while/whilenot loops. The loops will automatically be restricted to 65536 calls by Minecraft to prevent crashing, but accidentally producing an infinite loop can still cause extreme lag.
+
+For more complex programs, some users may want the conditionals of while/whilenot loops to use other execute subcommands. For these situations, there is the `loop` command, which is slightly more cumbersome to use but is significantly more powerful. Syntactically, `loop` works just like the `execute` command, but will repeatedly be called until it fails. Here's an example:
 ```
 def movetowall:
-    while block ~ ~ ~ air:
-        tp @s ^ ^ ^0.1
-    tp @s ^ ^ ^-0.1
+    loop at @p if block ~ ~ ~ air:
+        tp @p ^ ^ ^0.1
 ```
-There is also a “whilenot” keyword which works just like “unless”:
-```
-def movetowall:
-    whilenot block ~ ~ ~ stone:
-        tp @s ^ ^ ^0.1
-    tp @s ^ ^ ^-0.1
-```
-**Warning!** For people who are less experienced with programming, please be very careful when using while/whilenot loops. It is very easy to accidentally create an infinite loop, which will cause Minecraft to crash!
+You may notice that `while` is simply a shortcut for `loop if`, and `whilenot` is short for `loop unless`. Please also note that the danger posed by `while` is increased in calls to `loop`, as using a selector in a subcommand with multiple entities can cause the loop to fork each call.
 
 ## Break and Continue
 
