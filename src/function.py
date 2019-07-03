@@ -465,18 +465,22 @@ class Function:
             self.check_break(funcname)
 
         # while loop
-        elif tokens[0].strip() in ('while', 'whilenot'):
+        elif tokens[0].strip() in ('while', 'whilenot', 'loop'):
             if tokens[-1] == ':':
                 tokens.pop()  # remove a trailing ':'
 
             funcname = self.fork_function('w')
             # setup execution call
-            if tokens[0].strip() == 'while':
-                call = 'execute if ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(
-                    funcname)
+            if tokens[1] == ':':
+                tokens.pop(1)
+
+            if tokens[0].strip() == 'loop':
+                call = 'execute ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(funcname)
+            elif tokens[0].strip() == 'while':
+                call = 'execute if ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(funcname)
             else:
-                call = 'execute unless ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(
-                    funcname)
+                call = 'execute unless ' + self.process_tokens(tokens[1:], False, True) + ' run ' + self.call_function(funcname)
+
             for c in self.auxcommands:
                 self.add_command(c)
                 self.functions[funcname].add_command(c)
