@@ -282,7 +282,7 @@ class Function:
                     pass
 
             # evaluate the right side, perform the new assignment
-            expression = self.process_tokens(tokens[2:], True)
+            expression = self.process_tokens(tokens[2:], True, dest=dest)
             refpath = self.reference_path((''.join(tokens[2:])).strip())
 
             if expression.isdigit():  # an integer constant
@@ -299,9 +299,6 @@ class Function:
                 self.refs[dest] = 'e'
                 if expression != '@':
                     self.add_command(assign_entity(expression, dest))
-                # special case: assigning as a summon
-                if expression == select_entity('assign'):
-                    self.add_command(clear_tag('assign'))
 
             else:  # something else
                 self.raise_exception('Cannot assign "' + expression + '" to variable.')
@@ -526,7 +523,7 @@ class Function:
     # called on a set of tokens, intended to evaluate to a single string which represents some value which can be
     # inserted into vanilla commands. this can be an entity, integer, or series of vanilla commands (or components
     # thereof) will handle references as part of an expression.
-    def process_tokens(self, tokens, augsummon=False, conditional=False):
+    def process_tokens(self, tokens, augsummon=False, conditional=False, dest=None):
 
         args = broad_tokenize(''.join(tokens).strip())
 
@@ -534,12 +531,12 @@ class Function:
         if augsummon and args[0] == 'summon':
             ref = ' '.join(args)
             if 'Tags:[' in ref:
-                self.add_command(ref.replace('Tags:[', 'Tags:["assign",'))
+                self.add_command(ref.replace('Tags:[', 'Tags:["' + dest + '",'))
             elif ref[-1] == '}':
-                self.add_command(ref[:-1] + ',Tags:["assign"]}')
+                self.add_command(ref[:-1] + ',Tags:["' + dest + '"]}')
             else:
-                self.add_command(ref + ' {Tags:["assign"]}')
-            return select_entity('assign')
+                self.add_command(ref + ' {Tags:["' + dest + '"]}')
+            return '@' # don't make any further assignments
 
         # special case: conditional
         if conditional and len(args) > 2:
