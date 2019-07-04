@@ -33,18 +33,20 @@ def compile(destination, files, verbose=False, nofiles=False):
 
     # generate the file layout
     os.chdir("..")
-    try:
-        shutil.rmtree(destination)
-    except FileNotFoundError:
-        pass
 
-    os.mkdir(destination)
-    os.mkdir(os.path.join(destination, 'data'))
+    def create_folder(*path):
+        try:
+            os.mkdir(os.path.join(*path))
+        except FileExistsError:
+            pass
+
+    create_folder(destination)
+    create_folder(destination, 'data')
     with open(os.path.join(destination, 'pack.mcmeta'), 'w') as f:
         f.write(MCMETA)
-    os.mkdir(os.path.join(destination, 'data', 'minecraft'))
-    os.mkdir(os.path.join(destination, 'data', 'minecraft', 'tags'))
-    os.mkdir(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions'))
+    create_folder(destination, 'data', 'minecraft')
+    create_folder(destination, 'data', 'minecraft', 'tags')
+    create_folder(destination, 'data', 'minecraft', 'tags', 'functions')
 
     # load
     with open(os.path.join(destination, 'data', 'minecraft', 'tags', 'functions', 'load.json'), 'w') as f:
@@ -65,8 +67,14 @@ def compile(destination, files, verbose=False, nofiles=False):
             f.write(LOADTICK % "")
 
     # actual datapack
-    os.mkdir(os.path.join(destination, 'data', packname))
-    os.mkdir(os.path.join(destination, 'data', packname, 'functions'))
+    create_folder(destination, 'data', packname)
+
+    try:
+        shutil.rmtree(os.path.join(destination, 'data', packname, 'functions'))
+    except:
+        pass
+        
+    create_folder(destination, 'data', packname, 'functions')
     for func in namespace.functions:
         with open(os.path.join(destination, 'data', packname, 'functions', func[5:] + '.mcfunction'), 'w') as f:
             f.write('\n'.join(namespace.functions[func].commands))
