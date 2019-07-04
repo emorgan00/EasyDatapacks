@@ -426,7 +426,7 @@ def example:
 
 ## Comments
 
-Comments in EasyDatapacks work exactly the same as in normal commands. Just put a "#"" at the beginning of the line, and everything on that line will be ignored. Comments can also be placed at the end of a line. Just enter a space and then a "#", and everything onwards will be ignored.
+Comments in EasyDatapacks work exactly the same as in normal commands. Just put a "#"" at the beginning of the line, and everything on that line will be ignored. Comments can also be placed at the end of a line. Just enter a space, then a "#", then another space, and everything onwards will be ignored.
 
 ## Additional Notes
 

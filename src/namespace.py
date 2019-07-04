@@ -68,7 +68,7 @@ class Namespace:
             tokens = broad_tokenize(line)
 
             for j, token in enumerate(tokens):
-                if token[0] == '#':
+                if token == '#':
                     line = ' '.join(tokens[:j])
                     break
 
