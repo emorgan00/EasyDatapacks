@@ -1,6 +1,6 @@
-from commands import *
-from reader import *
-from validate import *
+from .commands import *
+from .reader import *
+from .validate import *
 
 
 class CompilationError(Exception):

@@ -1,6 +1,6 @@
-from commands import *
-from function import *
-from reader import *
+from .commands import *
+from .function import *
+from .reader import *
 
 
 class Namespace:

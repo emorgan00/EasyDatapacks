@@ -3,7 +3,7 @@ import argparse
 import os
 import time
 
-from datapack import *
+from .compiler import *
 
 
 parser = argparse.ArgumentParser(prog="datapack")
@@ -31,7 +31,7 @@ buildlike_parser.add_argument(
 buildlike_parser.add_argument("files", nargs="+")
 
 build_parser = subparser.add_parser(
-    "build", help="build EasyFunction files into a datapack", parents=[buildlike_parser]
+    "build", help="build EasyDatapacks files into a datapack", parents=[buildlike_parser]
 )
 
 link_parser = subparser.add_parser(

@@ -1,8 +1,8 @@
 import os
 import shutil
 
-from namespace import *
-from function import CompilationError
+from .namespace import *
+from .function import CompilationError
 
 MCMETA = '''{
     "pack" : {
