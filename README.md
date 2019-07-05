@@ -447,15 +447,14 @@ EasyDatapacks uses a compiler written in python. The file which you create will 
 Code on GitHub: https://github.com/emorgan00/EasyDatapacks
 
 ## Compiling from the Command Line
-**note:** This section will assume you are familiar with using the command line, and running python files.
 
 To use the command line interface, run:
 
-`$ python3 src/ build -o <destination-folder> <input-file>`
+`$ datapack build -o <destination-folder> <input-file>`
 
 This will take the file in `input-file` and compile it into a datapack located at `destination-folder`. Here is an example of what this might look like:
 
-`$ python3 src/ build -o path/to/MyWorld/datapacks/mydatapack path/to/mydatapack.mcf`
+`$ datapack build -o path/to/MyWorld/datapacks/mydatapack path/to/mydatapack.mcf`
 
 If you omit the `-o`, or `--output`, option, the output directory defaults to the name of the first file
 without its extension.
@@ -469,40 +468,25 @@ Additionally, you can add one of the following flags:
 ```
 Use a flag like this:
 
-`$ python3 src/ build -v -o <destination-folder> <input-file>`
+`$ datapack build -v -o <destination-folder> <input-file>`
 
 You can also compile multiple files at once, like this:
 
-`$ python3 src/ build -o <destination-folder> <file1> <file2> <...>`
+`$ datapack build -o <destination-folder> <file1> <file2> <...>`
 
 Compiling multiple files works exactly as if all the code from the separate files was all in one file.
 
 There's also the `link` command, which easily symlinks a given datapack folder into your `.minecraft`
 folder, so you can develop it without having to copy it over there every time:
 
-`$ python3 src/ link <datapack-destination-folder> <save-name>`
+`$ datapack link <datapack-destination-folder> <save-name>`
 
 Every time you update that directory, those updates will also be carried out on the datapack in the
 `.minecraft` directory.
 
-## Compiling with a Python Script
-**note:** This section assumes you know how to organize your python files to successfully import a file from EasyDatapacks.
-
-Some users may prefer to use a python script to quickly compile their files. Please note that this uses python 3. Once you have the files from EasyDatapacks in the same directory as your script, your code should look something like this:
-
-```
-import datapack # this should import datapack.py
-
-destination = “path/to/datapacks/mydatapack”
-files = [“path/to/file1.mcf”, “path/to/file2.mcf”]
-
-verbose, nofiles = False, False
-
-datapack.compile(destination, files, verbose, nofiles)
-```
 # Examples
 
-Here are a few examples of fully working datapacks written with EasyDatapacks. (These were basically thrown together by me, so don’t expect too much in terms of quality)
+Here are a few examples of fully working datapacks written with EasyDatapacks:
 
 [hookshot](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/hookshot.mcf)
 (this will implement a Zelda-like hookshot)
