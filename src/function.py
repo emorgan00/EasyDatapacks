@@ -321,6 +321,8 @@ class Function:
 
                 if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1'):
                     self.refs[dest] = expression[1:]
+                    if expression[1:] == 'i':
+                        self.namespace.add_int(dest)
                 else:
                     self.raise_exception('Invalid global variable: "' + expression + '".')
 
