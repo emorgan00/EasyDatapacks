@@ -471,13 +471,12 @@ class Function:
         # repeat
         elif tokens[0].strip() == 'repeat':
 
-            count = None
-            for token in tokens[1:]:
-                if token.isdigit():
-                    count = int(token)
-                    break
-            if count is None:
-                self.raise_exception('"repeat" without a number following it.')
+            count = ''.join(tokens[1:]).strip().strip(':')
+
+            try:
+                count = int(count)
+            except:
+                self.raise_exception('"' + count + '" is not a valid number.')
 
             funcname = self.fork_function('r')
             # setup execution call
