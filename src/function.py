@@ -95,6 +95,33 @@ class Function:
                 return test_path
         return None
 
+    def parse_clarifiers(self, clarifiers, path):
+
+        var, player, one = False, False, False
+
+        for c in clarifiers:
+            if c == 'v':
+                var = True
+            elif c == 'p':
+                player = True
+            elif c == '1':
+                one = True
+            elif c == 'e':
+                pass
+            else:
+                self.raise_exception('Unknown clarifier: "%s"' % c)
+
+        if var:
+            return ref
+        if player and one:
+            return select_player1(path)
+        elif player:
+            return select_player(path)
+        elif one:
+            return select_entity1(path)
+        else:
+            return select_entity(path)
+
     # will create an exception with line number and function name
     # syntaxerror means we are dealing with missing content
     def raise_exception(self, string, syntaxerror=False):
@@ -168,7 +195,7 @@ class Function:
                         param = token.split('#')
                         if len(param) == 1:
                             funcparams[token] = 'e'
-                        elif param[1] in ('e', 'i'):
+                        elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1'):
                             funcparams[param[0]] = param[1]
                         else:
                             self.raise_exception(
@@ -196,7 +223,7 @@ class Function:
 
         # dispel locals
         for ref in self.locals:
-            if self.refs[ref] == 'e':  # an entity
+            if self.refs[ref] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                 self.add_command(clear_tag(ref))
             else:  # something else
                 pass
@@ -211,25 +238,15 @@ class Function:
 
         path = self.reference_path(ref)
         if path is not None:  # some reference
-            if self.refs[path] == 'e':  # an entity
+            if self.refs[path] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                 out = ''
-                if len(components) == 2:
-                    clarifiers = expression.strip().split('#')[1]
-                    if clarifiers == '':
-                        out = select_entity(path)
-                    elif clarifiers == '1':
-                        out = select_entity1(path)
-                    elif clarifiers == 'p':
-                        out = select_player(path)
-                    elif clarifiers in ('1p', 'p1'):
-                        out = select_player1(path)
-                    elif clarifiers == 'v':
-                        out = ref
-                    else:
-                        self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
+
+                if len(components) > 1:
+                    clarifiers = components[1] + self.refs[path]
                 else:
-                    out = select_entity(path)
-                return out + (' ' if expression[-1] == ' ' else '')
+                    clarifiers = self.refs[path]
+
+                return self.parse_clarifiers(clarifiers, path) + (' ' if expression[-1] == ' ' else '')
 
             elif self.refs[path] == 'i':  # integer variable
                 out = ''
@@ -276,7 +293,7 @@ class Function:
 
             # clearing an old assignment
             else:
-                if self.refs[dest] == 'e':  # an entity
+                if self.refs[dest] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                     self.add_command(clear_tag(dest))
                 else:  # something else
                     pass
@@ -296,9 +313,16 @@ class Function:
                 self.add_command(augment_int(dest, refpath, '=', self.namespace))
 
             elif expression[0] == '@':  # an entity
+
                 self.refs[dest] = 'e'
-                if expression != '@':
-                    self.add_command(assign_entity(expression, dest))
+                self.add_command(assign_entity(expression, dest))
+
+            elif expression[0] == '#':  # a clarifier
+
+                if expression[1:] in ('e', 'i'):
+                    self.refs[dest] = expression[1:]
+                else:
+                    self.raise_exception('Invalid global variable: "' + expression + '". Choose from "#e" or "#i".')
 
             else:  # something else
                 self.raise_exception('Cannot assign "' + expression + '" to variable.')
@@ -385,7 +409,7 @@ class Function:
                 except IndexError:
                     self.raise_exception('Not enough paramaters for function "' + tokens[0].strip() + '".')
 
-                if func.params[p] == 'e':  # an entity
+                if func.params[p] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                     self.add_command(assign_entity(expression, func.name + '.' + p))
 
                 elif func.params[p] == 'i':  # in integer
