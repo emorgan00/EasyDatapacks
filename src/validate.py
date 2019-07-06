@@ -1,4 +1,4 @@
-from reader import *
+from .reader import *
 
 # this should accept a command as a string, and return a string detailing the issue
 # if <command> is not a valid vanilla minecraft command. None otherwise.
