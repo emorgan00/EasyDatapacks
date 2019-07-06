@@ -148,6 +148,7 @@ class Function:
 
         out = check(command)
         if out != None:
+            out = 'The following invalid command was generated: "%s"\nError:\n\t' % command + out
             self.raise_exception(out)
         self.commands.append(command)
 
