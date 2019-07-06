@@ -319,10 +319,10 @@ class Function:
 
             elif expression[0] == '#':  # a clarifier
 
-                if expression[1:] in ('e', 'i'):
+                if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1'):
                     self.refs[dest] = expression[1:]
                 else:
-                    self.raise_exception('Invalid global variable: "' + expression + '". Choose from "#e" or "#i".')
+                    self.raise_exception('Invalid global variable: "' + expression + '".')
 
             else:  # something else
                 self.raise_exception('Cannot assign "' + expression + '" to variable.')

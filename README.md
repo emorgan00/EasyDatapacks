@@ -237,7 +237,7 @@ This wouldn’t work either, though, because tick is outside the scope of Global
 
 The solution to this problem is to use a delayed assignment. This means you can declare a variable without actually storing anything in it, basically saying “here’s the scope of this variable, but I’m saving it for later”. Here’s the syntax:
 ```   
-Global = @
+Global = #e
 def load:
     Global = summon armor_stand 0 0 0 {CustomName=”\”Global\””}
     scoreboard objectives add timePassed dummy
@@ -247,7 +247,7 @@ def tick:
 ```
 Now, the scope of Global is across the whole program, and it can be accessed anywhere, but we don’t assign an armor stand into it until the load function.
 
-Delayed assignments also work for integer variables, and are used in the same way.
+Delayed assignments also work for integer variables, and are used in the same way, just with `#i`.
 
 ## Repeat Loops
 
