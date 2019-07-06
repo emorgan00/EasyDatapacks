@@ -1,4 +1,4 @@
-snap = @
+snap = #e
 
 def send_home block:
 

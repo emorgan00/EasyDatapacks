@@ -1,7 +1,7 @@
-clickdummy = @
-hookhead = @
-mode = @
-length = @
+clickdummy = #e
+hookhead = #e
+mode = #i
+length = #i
 
 def interact:
 
