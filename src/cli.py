@@ -31,7 +31,9 @@ buildlike_parser.add_argument(
 buildlike_parser.add_argument("files", nargs="+")
 
 build_parser = subparser.add_parser(
-    "build", help="build EasyDatapacks files into a datapack", parents=[buildlike_parser]
+    "build",
+    help="build EasyDatapacks files into a datapack",
+    parents=[buildlike_parser],
 )
 
 link_parser = subparser.add_parser(
@@ -47,8 +49,9 @@ watch_parser = subparser.add_parser(
 )
 
 
-def run(args):
-    args = parser.parse_args(args)
+def run(args=sys.argv):
+    parser.prog = args[0]
+    args = parser.parse_args(args[1:])
 
     if args.cmd == "build":
         _run_build(args)
