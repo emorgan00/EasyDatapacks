@@ -268,6 +268,9 @@ class Function:
                     out = select_int(path, self.namespace)
                 return out + (' ' if expression[-1] == ' ' else '')
 
+            elif self.refs[path] == 's':  # string parameter
+                return '!s{' + path + '}' + (' ' if expression[-1] == ' ' else '')
+
         # a simple constant
         return expression
 

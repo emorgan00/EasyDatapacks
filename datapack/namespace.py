@@ -82,7 +82,7 @@ class Namespace:
 
         Function(['main'], {}, lines, self, 0, 0, None, None).compile()
 
-        # post-process, add in the function calls
+        # post-process
         for funcname in self.functions:
             func = self.functions[funcname]
             

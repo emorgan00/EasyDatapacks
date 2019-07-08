@@ -2,9 +2,19 @@
 def tokenize(line):
     tokens = []
     buff = ''
+    inquote = False
 
     for ch in line:
-        if ch in '=,{}[]():"\'+-*<>%\\/':
+        if ch in '"\'':
+            if len(buff) > 0:
+                tokens.append(buff)
+            tokens.append(ch)
+            buff = ''
+            inquote = not inquote
+        elif inquote:
+            buff += ch
+            continue
+        elif ch in '=,{}[]():+-*<>%\\/':
             if len(buff) > 0:
                 tokens.append(buff)
             tokens.append(ch)
@@ -70,3 +80,5 @@ def valid_name(expression):
         if c not in 'qwertyuiopasdfghjklzxcvbnm#_':
             return False
     return True
+
+print(tokenize('"Hello world!"'))
