@@ -468,6 +468,12 @@ Code on GitHub: https://github.com/emorgan00/EasyDatapacks
 
 ## Compiling from the Command Line
 
+First things first, you'll need to install EasyDatapacks:
+
+```sh
+$ pip install --user git+https://github.com/emorgan00/EasyDatapacks
+```
+
 To use the command line interface, run:
 
 `$ datapack build -o <destination-folder> <input-file>`
