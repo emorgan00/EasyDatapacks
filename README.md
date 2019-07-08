@@ -173,17 +173,17 @@ def example2:
 ```
 We had to use `#1` on the target variable because you can only tp to a single entity.
 
-The situation may also arise where you don't want a variable to be replaced with an entity query. For example:
+The situation may also arise where you don't want a variable to be replaced with an entity query. For example, say you want to take a player and print their name like this: "[player] emorgan00". However, you want some specific coloring as well:
 ```
 def say_my_name player:
-    tellraw @a [{"text":"I am the player, and my name is "},{"selector":"player"}]
+    tellraw @a ["[",{"text":"player", "color":"blue"},"] ",{"selector":"player"}]
 ```
 The "player" variable will be detected twice, although the first one is unintentional. The output will end up looking something like this:
-`I am a @e[...some random stuff...], and my name is emorgan00`
-The solution is to use the `#v` clarifier, which tells the compiler to just substitute the variable name instead of a selector:
+`[@e[...some random stuff...]] emorgan00`
+The solution is to use the `#v` clarifier, which tells the compiler to just use the variable name instead of a selector:
 ```
 def say_my_name player:
-    tellraw @a [{"text":"I am the player#v, and my name is "},{"selector":"player"}]
+    tellraw @a ["[",{"text":"player#v", "color":"blue"},"] ",{"selector":"player"}]
 ```
 
 When using clarifiers combined with selectors, the syntax should be as follows:
