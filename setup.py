@@ -27,7 +27,7 @@ setup(
     url="https://github.com/emorgan00/EasyDatapacks",
     keywords="minecraft datapack",
     license="MIT",
-    package_dir={"datapack": "src"},
+    package_dir={"datapack": "datapack"},
     packages=["datapack"],
     entry_points={"console_scripts": ["datapack = datapack.cli:run"]},
     py_modules=["__main__"] if egg_dist else [],
