@@ -80,5 +80,3 @@ def valid_name(expression):
         if c not in 'qwertyuiopasdfghjklzxcvbnm#_':
             return False
     return True
-
-print(tokenize('"Hello world!"'))

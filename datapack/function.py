@@ -315,6 +315,7 @@ class Function:
                 self.add_command(assign_int(expression, dest, self.namespace))
 
             elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
+
                 self.refs[dest] = 'i'
                 self.namespace.add_int(dest)
                 self.add_command(augment_int(dest, refpath, '=', self.namespace))
@@ -327,7 +328,7 @@ class Function:
 
             elif expression[0] == '#':  # a clarifier
 
-                if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1'):
+                if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
                     self.refs[dest] = expression[1:]
                     if expression[1:] == 'i':
                         self.namespace.add_int(dest)
@@ -674,7 +675,7 @@ class Function:
     # this will call a sub-function of name <funcname>
     def call_function(self, funcname):
 
-        return '!callfunction '+funcname
+        return '!f{' + funcname + '}'
 
     # this is called after spawning a forked function. It checks if the function has a break/continue,
     # and will branch the current function accordingly.

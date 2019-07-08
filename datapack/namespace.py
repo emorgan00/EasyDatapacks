@@ -132,17 +132,30 @@ class Namespace:
     def post_process_line(self, line):
 
         # function call
-        index = line.find('!callfunction')
+        index = line.find('!f{')
         if index != -1:
 
-            callfuncname = line[index:].split(' ')[1]
+            start = index
+
+            data = []
+            buff = ''
+            index += 2
+            while index < len(line) and line[index] == '{':
+                index += 1
+                while index < len(line) and line[index] != '}':
+                    buff += line[index]
+                    index += 1
+                data.append(buff)
+                index += 1
+
+            callfuncname = data[0]
             callfunc = self.functions[callfuncname]
 
             if len(callfunc.commands) > 1:
                 callfunc.used = True
-                return line[:index] + 'function ' + self.pack + ':' + callfuncname[5:]
+                return line[:start] + 'function ' + self.pack + ':' + callfuncname[5:]
             else:
                 # if a function is only 1 command, just execute it directly.
-                return line[:index] + self.post_process_line(callfunc.commands[0])
+                return line[:start] + self.post_process_line(callfunc.commands[0])
 
         return line
