@@ -1,5 +1,10 @@
 from setuptools import setup
 
+try:
+    import py2exe
+except ImportError:
+    pass
+
 
 setup(
     name="EasyDatapacks",
@@ -9,7 +14,7 @@ setup(
     url="https://github.com/emorgan00/EasyDatapacks",
     keywords="minecraft datapack",
     license="MIT",
-    license_file="LICENSE",
     packages=["datapack"],
     entry_points={"console_scripts": ["datapack = datapack.__main__:main"]},
+    py_modules=["datapack.__main__:main"],
 )
