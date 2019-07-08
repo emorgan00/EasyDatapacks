@@ -48,11 +48,15 @@ class Function:
         # stores the number of times this function has forked to another function. Used to ensure unique function names.
         self.relcounter = 0
 
+        # stores the number of times this string-parametered function has instantiated. Used to ensure unique function names.
+        # functions without string parameters will never use this.
+        self.instancecounter = 0
+        self.instantiable = 's' in params.values()
+
         # stores the content of the line before the one we are currently parsing. Currently only used for if-else logic.
         self.pastline = ''
 
-        # this will get set to true when this function is called by another function. Unused functions will get
-        # "collapsed".
+        # this will get set to true when this function is called by another function. Unused functions will get "collapsed".
         self.used = False
 
         # stuff with break/return
@@ -195,15 +199,15 @@ class Function:
                         param = token.split('#')
                         if len(param) == 1:
                             funcparams[token] = 'e'
-                        elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1'):
+                        elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
                             funcparams[param[0]] = param[1]
                         else:
                             self.raise_exception(
-                                'Invalid parameter clarifier: "' + token.strip() + '" for function ' + tokens[
-                                    1].strip() + '.')
+                                'Invalid parameter clarifier "' + token.strip() + '" for function "' + tokens[
+                                    1].strip() + '".')
                     else:
                         self.raise_exception(
-                            'Invalid parameter name "' + token.strip() + '" for function ' + tokens[1].strip() + '.')
+                            'Invalid parameter name "' + token.strip() + '" for function "' + tokens[1].strip() + '".')
 
                 if '.'.join(funcpath) in self.functions:
                     self.raise_exception('Duplicate function "' + funcpath[-1] + '"')
