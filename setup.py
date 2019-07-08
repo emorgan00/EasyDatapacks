@@ -1,4 +1,5 @@
 from setuptools import setup
+import sys
 
 try:
     import py2exe
@@ -16,6 +17,6 @@ setup(
     license="MIT",
     package_dir={"datapack": "src"},
     packages=["datapack"],
-    entry_points={"console_scripts": ["datapack = datapack.__main__:main"]},
-    py_modules=["__main__"],
+    entry_points={"console_scripts": ["datapack = datapack.cli:run"]},
+    py_modules=["__main__"] if "bdist_egg" in sys.argv else [],
 )
