@@ -453,7 +453,8 @@ class Function:
             # we know the pastline is valid, otherwise it would have already thrown an exception last time
             pastfuncname = self.function_path('e'+str(self.relcounter-2))
             entity = '@e[tag=' + funcname + '.ELSE]'
-            summon = 'execute unless entity ' + entity + ' run summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + funcname + '.ELSE"]}'
+            summon = 'execute unless entity ' + entity + ' run summon area_effect_cloud 0 0 0 {Age:-2147483648,Duration:-1,WaitTime:-2147483648,Tags:["' + \
+                funcname + '.ELSE"]}'
             self.functions[pastfuncname].commands.insert(0, summon)
 
             call = 'execute unless entity ' + entity + ' '
@@ -509,9 +510,9 @@ class Function:
             self.add_command(call)
             self.functions[funcname].call_loop(funcname, call)
             if self.functions[funcname].hasbreak:
-                self.add_command('kill @e[type=armor_stand,tag=' + funcname + '.BREAK]')
+                self.add_command('kill @e[tag=' + funcname + '.BREAK]')
             if self.functions[funcname].hascontinue:
-                self.add_command('kill @e[type=armor_stand,tag=' + funcname + '.CONTINUE]')
+                self.add_command('kill @e[tag=' + funcname + '.CONTINUE]')
 
         # break
         elif tokens[0].strip() == 'break':
@@ -519,7 +520,7 @@ class Function:
                 self.raise_exception('"break" outside of loop.')
 
             self.hasbreak = True
-            self.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + '.'.join(
+            self.add_command('summon area_effect_cloud 0 0 0 {Age:-2147483648,Duration:-1,WaitTime:-2147483648,Tags:["' + '.'.join(
                 self.inloop) + '.BREAK"]}')
 
         # continue
@@ -528,7 +529,7 @@ class Function:
                 self.raise_exception('"continue" outside of loop.')
 
             self.hascontinue = True
-            self.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + '.'.join(
+            self.add_command('summon area_effect_cloud 0 0 0 {Age:-2147483648,Duration:-1,WaitTime:-2147483648,Tags:["' + '.'.join(
                 self.inloop) + '.CONTINUE"]}')
 
         # vanilla command
@@ -680,11 +681,11 @@ class Function:
 
             if func.hasbreak:
                 self.hasbreak = True
-                call += 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.BREAK] '
+                call += 'unless entity @e[tag=' + '.'.join(self.inloop) + '.BREAK] '
 
             if func.hascontinue:
                 self.hascontinue = True
-                call += 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] '
+                call += 'unless entity @e[tag=' + '.'.join(self.inloop) + '.CONTINUE] '
 
             # if fork isn't in self.functions, then it was collapsed and we don't have to worry about it.
             if fork in self.functions and len(self.functions[fork].commands) > 0:
@@ -712,10 +713,10 @@ class Function:
         if func.hasbreak or func.hascontinue:
 
             if func.hasbreak:
-                newcall = 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.BREAK] run ' + newcall
+                newcall = 'unless entity @e[tag=' + '.'.join(self.inloop) + '.BREAK] run ' + newcall
 
             if func.hascontinue:
-                newcall = 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + newcall
+                newcall = 'unless entity @e[tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + newcall
 
             newcall = 'execute ' + newcall
 
@@ -724,8 +725,8 @@ class Function:
         # if the loop has a continue, we need to reset it to the beginning if we reach the end and continue has been
         # called
         if self.functions[funcname].hascontinue:
-            cmd = 'kill @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE]'
+            cmd = 'kill @e[tag=' + '.'.join(self.inloop) + '.CONTINUE]'
             self.functions[funcname].commands.insert(0, cmd)
 
-            cmd = 'execute if entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + call
+            cmd = 'execute if entity @e[tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + call
             self.functions[funcname].commands.append(cmd)
