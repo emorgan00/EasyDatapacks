@@ -14,7 +14,8 @@ setup(
     url="https://github.com/emorgan00/EasyDatapacks",
     keywords="minecraft datapack",
     license="MIT",
+    package_dir={"datapack": "src"},
     packages=["datapack"],
     entry_points={"console_scripts": ["datapack = datapack.__main__:main"]},
-    py_modules=["datapack.__main__:main"],
+    py_modules=["__main__"],
 )
