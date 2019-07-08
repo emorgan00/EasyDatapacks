@@ -412,6 +412,8 @@ class Function:
             if len(givenparams) > len(func.params):
                 self.raise_exception('Too many parameters for function "' + tokens[0].strip() + '".')
 
+            funcdata = []
+
             for i, p in enumerate(func.params):
 
                 expression = None
@@ -430,7 +432,13 @@ class Function:
                         self.add_command(
                             augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
 
-            self.add_command(self.call_function(funcpath))
+                elif func.params[p] == 's':  # a string
+                    if expression[0] == '"' and expression[-1] == '"':
+                        funcdata.append(expression.strip('"'))
+                    else:
+                        self.raise_exception('"' + expression + '" is not a valid string.')
+
+            self.add_command(self.call_function(funcpath, *funcdata))
 
         # implicit execute
         elif tokens[0].strip() in (
@@ -673,9 +681,9 @@ class Function:
         return funcname
 
     # this will call a sub-function of name <funcname>
-    def call_function(self, funcname):
+    def call_function(self, funcname, *funcdata):
 
-        return '!f{' + funcname + '}'
+        return '!f{' + funcname + '}' + ''.join('{' + f + '}' for f in funcdata)
 
     # this is called after spawning a forked function. It checks if the function has a break/continue,
     # and will branch the current function accordingly.
@@ -731,8 +739,8 @@ class Function:
 
         func.commands.append(newcall)
 
-        # if the loop has a continue, we need to reset it to the beginning if we reach the end and continue has been
-        # called
+        # if the loop has a continue,
+        # we need to reset it to the beginning if we reach the end and continue has been called
         if self.functions[funcname].hascontinue:
             cmd = 'kill @e[tag=' + '.'.join(self.inloop) + '.CONTINUE]'
             self.functions[funcname].commands.insert(0, cmd)

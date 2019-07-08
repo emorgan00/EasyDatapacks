@@ -146,10 +146,14 @@ class Namespace:
                     buff += line[index]
                     index += 1
                 data.append(buff)
+                buff = ''
                 index += 1
 
             callfuncname = data[0]
             callfunc = self.functions[callfuncname]
+
+            if len(data) > 1:  # string params
+                print(data)
 
             if len(callfunc.commands) > 1:
                 callfunc.used = True
