@@ -405,7 +405,27 @@ def example:
     greet_n_times @r 10
 ```
 
-## Parameters as JSON components
+## Clarifiers in Parameters
+
+If you know in advance that a parameter will always be a player or a single entity, you may find it simpler to use the corresponding clarifier in the function declaration. EasyDatapacks does in fact support this. For example, the two following functions are equivalent:
+```
+def greet1 player:
+    tellraw player#p "Hello!"
+    give player#p bread 1
+
+def greet2 player#p:
+    tellraw player "Hello!"
+    give player bread 1
+```
+
+Please note that the `#p` status of the `player` variable would be overwritten if you were to reassign another entity to the variable. For example, the following would not work:
+```
+def greet player#p:
+    player = @p
+    give player bread 1
+```
+
+## Variables as JSON Text Components
 
 Suppose you want a function which takes a player as input, and then prints that player's name to the chat. Vanilla commands allow you to convert entity names and scores to test as part of a JSON array, which is what we will need to use to make this work. However, unlike a command parameter, entity selectors appear in JSON as text. Thankfully, EasyDatapacks will also parse any JSON inputs in your program and detect variables or parameters, incorporating them accordingly.
 
