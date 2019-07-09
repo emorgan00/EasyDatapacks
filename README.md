@@ -575,11 +575,6 @@ Every time you update that directory, those updates will also be carried out on 
 
 Here are a few examples of fully working datapacks written with EasyDatapacks:
 
-[hookshot](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/hookshot.mcf)
-(this will implement a Zelda-like hookshot)
+[String Functions](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/strings.mcf): A brief example of the various things you can do with raw text.
 
-[movingblocks](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/movingblocks.mcf)
-(this will implement moving blocks which can be pushed along the grid, and slide on ice)
-
-[locks](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/locks.mcf)
-(this will implement iron and gold locks, which can be opened with iron and gold keys)
+[Raytracing](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/simple_raytracer.mcf): A super simple ray tracing program that shows how simple it is in EasyDatapacks.

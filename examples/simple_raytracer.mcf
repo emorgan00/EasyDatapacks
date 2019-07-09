@@ -1,0 +1,14 @@
+def tick:
+
+	# this is a fully functional ray tracer in 7 lines of code.
+
+	tracer = summon area_effect_cloud 0 0 0
+	as @p rotated as @s at @s anchored eyes
+		tp tracer ^ ^ ^ ~ ~
+
+	# while the block in front of <tracer> is air, move <tracer> forward
+	loop as tracer at @s if block ^ ^ ^0.0625 air
+		tp @s ^ ^ ^0.0625
+
+	at tracer
+		particle crit ~ ~ ~ 0 0 0 0 1
