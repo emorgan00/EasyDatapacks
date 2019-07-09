@@ -444,6 +444,67 @@ def example:
     tellraw @a [{"text": "Hi, my name is "}, {"selector":"someplayer"}]
 ```
 
+## Text Strings
+
+EasyDatapacks has two data types which are used at run-time, but it also has a third data type which is handled only at compile time: Strings.
+
+A string is any piece of raw text which can be inserted into a command at any location. For example, consider the following program:
+```
+def example:
+    my_favorite_food = chicken
+```
+Because `chicken` isn't a number or entity, it's just a piece of raw text stored in the variable `my_favorite_food`. This raw text can be used anywhere in a command, such as in the following:
+```
+def example:
+    my_favorite_food = chicken
+    give @p my_favorite_food 1
+```
+This would give me 1 piece of chicken.
+
+Strings can be parameters as well. To indicate that a parameter is a string, use the `#s` clarifier, like this:
+```
+def give_kindly player#p item_a#s item_b#s:
+
+    give player item_a 1
+    give player item_b 1
+
+    tellraw player ["Here, take this ", "item_a", " and ", "item_b", "!"]
+
+def load:
+
+    give_kindly @p chicken bread
+```
+The above program would give me 1 chicken and 1 bread, and then say `Here, take this chicken and bread!`
+
+## Resolving Type Conflicts
+
+Suppose I have the following program:
+```
+def example:
+    x = 10
+    y = 15
+    z = 20
+    tp @p x y z
+```
+It should be clear that this program isn't going to work, as `x`, `y`, and `z` are all integers, not strings, and you can't teleport a player based on scoreboard scores. In order to resolve this, we will need to let the compiler know that we want to our variables to have the string data type:
+```
+def example:
+    x#s = 10
+    y#s = 15
+    z#s = 20
+    tp @p x y z
+```
+This will work. In general, if something isn't the data type you want it to be, you can place a clarifier on the variable or parameter name to fix it.
+
+For those who may be wondering, the following are all also valid:
+```
+def example:
+    player#p1 = @p
+    stand#e = summon armor_stand ~ ~ ~
+    number#i = 15
+    text#s = @e
+```
+
 ## Comments
 
 Comments in EasyDatapacks work exactly the same as in normal commands. Just put a "#"" at the beginning of the line, and everything on that line will be ignored. Comments can also be placed at the end of a line. Just enter a space, then a "#", then another space, and everything onwards will be ignored.
