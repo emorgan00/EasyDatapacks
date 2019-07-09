@@ -321,6 +321,8 @@ class Function:
             else:
                 if self.refs[dest] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                     self.add_command(clear_tag(dest))
+                elif self.refs[dest] == 's':  # a string
+                    self.raise_exception('Strings are handled at compile time, so overwriting a string may produce undefined behavior.')
                 else:  # something else
                     pass
 
@@ -349,7 +351,7 @@ class Function:
 
                 elif expression[0] == '#':  # a clarifier
 
-                    if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
+                    if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1'):
                         self.refs[dest] = expression[1:]
                         if expression[1:] == 'i':
                             self.namespace.add_int(dest)
