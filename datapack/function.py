@@ -347,8 +347,9 @@ class Function:
                 else:
                     self.raise_exception('Invalid global variable: "' + expression + '".')
 
-            else:  # something else
-                self.raise_exception('Cannot assign "' + expression + '" to variable.')
+            else:
+                self.stringdata[dest] = expression
+                self.refs[dest] = 's'
 
         # augmented assignment (for integers)
         elif len(tokens) > 2 and (
@@ -654,6 +655,7 @@ class Function:
     # 'e' = implicit execution
     # 'r' = repeat loop body
     # 'b' = chained continue/break-check function
+    # 's' = forked string function (not used in this function)
     # returns the name of the function which was generated
     def fork_function(self, code):
 

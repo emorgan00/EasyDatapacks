@@ -24,6 +24,9 @@ class Namespace:
         # to comply with objectives being no longer than 16 chars
         self.intmap = {}
 
+        # for displaying at the end when verbose
+        self.clonedfunctions = []
+
     def add_constant(self, value):
 
         self.consts.append(value)
@@ -101,8 +104,12 @@ class Namespace:
             self.functions.pop(f)
 
         if verbose and len(unused) > 0:
-            print('collapsing branches...')
+            print('\ncollapsing branches...')
             print('\n\t' + ', '.join(f[5:] for f in unused))
+
+        if verbose and len(self.clonedfunctions) > 0:
+            print('\ncloning string functions...')
+            print('\n\t' + ', '.join(f[5:] for f in self.clonedfunctions))
 
         # handle scoreboard variables
         if len(self.ints) > 0:
@@ -193,6 +200,8 @@ class Namespace:
 
         copy.compile()
         self.functions[copy.name] = copy
+
+        self.clonedfunctions.append(copy.name)
 
         return copy.name
 

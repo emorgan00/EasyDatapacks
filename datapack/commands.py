@@ -10,7 +10,7 @@ def select_entity(tag):
 
 
 def select_player(tag):
-    return '@p[tag=%s]' % tag
+    return '@a[tag=%s]' % tag
 
 
 def select_entity1(tag):
