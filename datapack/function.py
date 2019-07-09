@@ -205,6 +205,7 @@ class Function:
 
                 funcparams = {}
                 funcdefaults = {}
+                hasdefault = False
 
                 for token in (''.join(tokens[2:])).split(' '):
                     token = token.strip(':')
@@ -214,6 +215,10 @@ class Function:
                     param = equals[0].split('#')
                     if len(equals) > 1:
                         default = '='.join(equals[1:])
+                        hasdefault = True
+
+                    if default is None and hasdefault:
+                        self.raise_exception('Can\'t have a non-default parameter after a default parameter.')
                     
                     if len(token) == 0:
                         continue
