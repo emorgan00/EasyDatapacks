@@ -105,7 +105,7 @@ class Namespace:
 
         if verbose and len(unused) > 0:
             print('\ncollapsing branches...')
-            print('\n\t' + ', '.join(f[5:] for f in unused))
+            print('\n\t' + ', '.join(f[5:] for f in unused if f not in self.clonedfunctions))
 
         if verbose and len(self.clonedfunctions) > 0:
             print('\ncloning string functions...')
