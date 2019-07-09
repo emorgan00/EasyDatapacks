@@ -249,6 +249,9 @@ class Function:
         components = expression.strip().split('#')
         ref = components[0]
 
+        if len(components) == 2 and components[1] == 'v':
+            return ref
+
         path = self.reference_path(ref)
         if path is not None:  # some reference
             if self.refs[path] in ('e', 'p', '1', '1p', 'p1'):  # an entity
@@ -269,8 +272,6 @@ class Function:
                         out = select_int(path, self.namespace)
                     elif clarifiers == 't':
                         out = text_int(path, self.namespace)
-                    elif clarifiers == 'v':
-                        out = ref
                     else:
                         self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
                 else:
@@ -489,7 +490,7 @@ class Function:
                             augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
 
                 elif func.params[p] == 's':  # a string
-                    funcdata.append(self.process_expression(expression.strip('"')))
+                    funcdata.append(self.process_expression(expression))
 
             self.add_command(self.call_function(funcpath, *funcdata))
 
