@@ -448,10 +448,7 @@ class Function:
                             augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
 
                 elif func.params[p] == 's':  # a string
-                    if expression[0] == '"' and expression[-1] == '"':
-                        funcdata.append(expression.strip('"'))
-                    else:
-                        self.raise_exception('"' + expression + '" is not a valid string.')
+                    funcdata.append(self.process_expression(expression.strip('"')))
 
             self.add_command(self.call_function(funcpath, *funcdata))
 
