@@ -15,6 +15,9 @@ buildlike_parser.add_argument(
     "-v", "--verbose", action="store_true", help="print out all generated commands."
 )
 buildlike_parser.add_argument(
+    "-z", "--zip", action="store_true", help="zip the output folder."
+)
+buildlike_parser.add_argument(
     "-n",
     "--nofiles",
     action="store_true",
@@ -98,7 +101,7 @@ def _run_build(args):
     try:
         outdir = args.output[0] if args.output else args.files[0]
         outdir = os.path.realpath(os.path.splitext(outdir)[0])
-        success = compile(outdir, args.files, args.verbose, args.nofiles)
+        success = compile(outdir, args.files, args.verbose, args.nofiles, args.zip)
     except CompilationError as e:
         print(e)
         sys.exit()
