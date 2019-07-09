@@ -80,3 +80,6 @@ def valid_name(expression):
         if c not in 'qwertyuiopasdfghjklzxcvbnm#_':
             return False
     return True
+
+def valid_int(expression):
+    return expression[1:].isdigit() and expression[0] in '-0123456789'

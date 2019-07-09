@@ -348,7 +348,7 @@ class Function:
 
             if clarifiers == '':
 
-                if expression.isdigit():  # an integer constant
+                if valid_int(expression):  # an integer constant
                     self.refs[dest] = 'i'
                     self.namespace.add_int(dest)
                     self.add_command(assign_int(expression, dest, self.namespace))
@@ -389,7 +389,7 @@ class Function:
 
             elif clarifiers == 'i':
 
-                if expression.isdigit():  # an integer constant
+                if valid_int(expression):  # an integer constant
                     self.refs[dest] = 'i'
                     self.namespace.add_int(dest)
                     self.add_command(assign_int(expression, dest, self.namespace))
@@ -439,7 +439,7 @@ class Function:
                 self.raise_exception('Cannot perform augmented assignment on "' + var + '"')
 
             inref = self.reference_path(expression)
-            if inref is None and expression.isdigit():  # int constant
+            if inref is None and valid_int(expression):  # int constant
                 if op == '+=':
                     self.add_command(add_int(expression, dest, self.namespace))
                 elif op == '-=':
