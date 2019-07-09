@@ -12,7 +12,7 @@ class CompilationSyntaxError(CompilationError):
 
 class Function:
 
-    def __init__(self, path, params, lines, namespace, start, expecteddepth, infunc, inloop, stringdata):
+    def __init__(self, path, params, defaults, lines, namespace, start, expecteddepth, infunc, inloop, stringdata):
 
         # master list of all generated vanilla commands in the function
         self.commands = []
@@ -32,6 +32,7 @@ class Function:
 
         # the parameters supplied to this function, follows the same format as refs
         self.params = params
+        self.defaults = defaults
 
         # the raw user input. an element of the list is in the format (tab-depth, str-content, line-number)
         self.lines = lines
@@ -200,9 +201,17 @@ class Function:
                     self.raise_exception('Invalid function name: "' + tokens[1].strip() + '".')
 
                 funcparams = {}
+                funcdefaults = {}
+
                 for token in (''.join(tokens[2:])).split(' '):
                     token = token.strip(':')
-                    param = token.split('#')
+                    default = None
+
+                    equals = token.split('=')
+                    param = equals[0].split('#')
+                    if len(equals) > 1:
+                        default = '='.join(equals[1:])
+                    
                     if len(token) == 0:
                         continue
                     if valid_name(param[0]):
@@ -216,6 +225,9 @@ class Function:
                             self.raise_exception(
                                 'Invalid parameter clarifier "' + token.strip() + '" for function "' + tokens[
                                     1].strip() + '".')
+
+                        if default:
+                            funcdefaults[param[0]] = default
                     else:
                         self.raise_exception(
                             'Invalid parameter name "' + token.strip() + '" for function "' + tokens[1].strip() + '".')
@@ -223,7 +235,7 @@ class Function:
                 if '.'.join(funcpath) in self.functions:
                     self.raise_exception('Duplicate function "' + funcpath[-1] + '"')
 
-                self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, self.lines, self.namespace,
+                self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, funcdefaults, self.lines, self.namespace,
                                                               self.pointer + i + 1, depth + 1, funcpath, None, self.stringdata)
 
         # process lines
@@ -478,7 +490,10 @@ class Function:
                 try:
                     expression = self.process_expression(givenparams[i]).strip()
                 except IndexError:
-                    self.raise_exception('Not enough paramaters for function "' + tokens[0].strip() + '".')
+                    if p in func.defaults:
+                        expression = func.defaults[p]
+                    else:
+                        self.raise_exception('Not enough parameters for function "' + tokens[0].strip() + '".')
 
                 if func.params[p] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                     self.add_command(assign_entity(expression, func.name + '.' + p))
@@ -723,7 +738,7 @@ class Function:
         funcname = '.'.join(funcpath)
 
         try:
-            self.functions[funcname] = Function(funcpath, {}, self.lines, self.namespace, newpointer, newdepth,
+            self.functions[funcname] = Function(funcpath, {}, {}, self.lines, self.namespace, newpointer, newdepth,
                                                 self.infunc, inloop, self.stringdata)
             # if this is a break-chain, we should carry over the pastline because its the same level of indentation
             if code == 'b':
