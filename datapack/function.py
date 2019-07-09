@@ -187,6 +187,8 @@ class Function:
                 self.refs[p] = 's'
                 self.locals.append(p)
 
+        storepointer = self.pointer
+
         # pre-process function headers:
         for i, p in enumerate(self.lines[self.pointer:]):
             if p[0] < depth:
@@ -195,6 +197,7 @@ class Function:
                 continue
             if p[1][:3] == 'def':
 
+                self.pointer = i
                 tokens = tokenize(p[1])
                 funcpath = self.path + [tokens[1].strip()]
                 if not valid_name(tokens[1].strip()):
@@ -236,7 +239,9 @@ class Function:
                     self.raise_exception('Duplicate function "' + funcpath[-1] + '"')
 
                 self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, funcdefaults, self.lines, self.namespace,
-                                                              self.pointer + i + 1, depth + 1, funcpath, None, self.stringdata)
+                                                              storepointer + i + 1, depth + 1, funcpath, None, self.stringdata)
+
+        self.pointer = storepointer
 
         # process lines
         while self.pointer < len(self.lines):
