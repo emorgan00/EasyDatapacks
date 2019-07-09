@@ -206,7 +206,6 @@ class Function:
                     if len(token) == 0:
                         continue
                     if valid_name(param[0]):
-                        print(param)
                         if len(param) == 1:
                             funcparams[token] = 'e'
                         elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
