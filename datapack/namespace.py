@@ -153,6 +153,8 @@ class Namespace:
             while index < len(line) and line[index] == '{':
                 index += 1
                 while index < len(line) and line[index] != '}':
+                    if line[index] == '\\':
+                        index += 1
                     buff += line[index]
                     index += 1
                 data.append(buff)

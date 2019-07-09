@@ -741,7 +741,11 @@ class Function:
     # this will call a sub-function of name <funcname>
     def call_function(self, funcname, *funcdata):
 
-        return '!f{' + funcname + '}' + ''.join('{' + f + '}' for f in funcdata)
+        for f in funcdata:
+            if f[-1] == '\\':
+                self.raise_exception('"\\" cannot be the last character of a string.')
+        
+        return '!f{' + funcname + '}' + ''.join('{' + f.replace('}','\\}').replace('{','\\{') + '}' for f in funcdata)
 
     # this is called after spawning a forked function. It checks if the function has a break/continue,
     # and will branch the current function accordingly.
