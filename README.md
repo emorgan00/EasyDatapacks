@@ -568,6 +568,7 @@ Additionally, you can add one of the following flags:
 ```
 -v, --verbose: print out all generated commands.
 -n, --nofiles: don't generate any files.
+-z, --zip: compress the generated datapack into a zipped folder.
 ```
 Use a flag like this:
 
