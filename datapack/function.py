@@ -303,11 +303,17 @@ class Function:
 
             if len(tokens) == 2:
                 self.raise_exception('Expected something after "=".')
-            dest = self.reference_path(tokens[0].strip())
+
+            destdata = tokens[0].strip().split('#')
+            dest = self.reference_path(destdata[0])
+
+            clarifiers = ''
+            if len(destdata) == 2:
+                clarifiers = destdata[1]
 
             # assigning something for the first time
             if dest is None:
-                dest = self.name + '.' + tokens[0].strip()
+                dest = self.name + '.' + destdata[0]
                 self.locals.append(dest)
 
             # clearing an old assignment
@@ -321,35 +327,69 @@ class Function:
             expression = self.process_tokens(tokens[2:], True, dest=dest)
             refpath = self.reference_path((''.join(tokens[2:])).strip())
 
-            if expression.isdigit():  # an integer constant
-                self.refs[dest] = 'i'
-                self.namespace.add_int(dest)
-                self.add_command(assign_int(expression, dest, self.namespace))
+            if clarifiers == '':
 
-            elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
+                if expression.isdigit():  # an integer constant
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(assign_int(expression, dest, self.namespace))
 
-                self.refs[dest] = 'i'
-                self.namespace.add_int(dest)
-                self.add_command(augment_int(dest, refpath, '=', self.namespace))
+                elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
 
-            elif expression[0] == '@':  # an entity
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(augment_int(dest, refpath, '=', self.namespace))
 
-                self.refs[dest] = 'e'
-                if expression != '@':
-                    self.add_command(assign_entity(expression, dest))
+                elif expression[0] == '@':  # an entity
 
-            elif expression[0] == '#':  # a clarifier
+                    self.refs[dest] = 'e'
+                    if expression != '@':
+                        self.add_command(assign_entity(expression, dest))
 
-                if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
-                    self.refs[dest] = expression[1:]
-                    if expression[1:] == 'i':
-                        self.namespace.add_int(dest)
+                elif expression[0] == '#':  # a clarifier
+
+                    if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
+                        self.refs[dest] = expression[1:]
+                        if expression[1:] == 'i':
+                            self.namespace.add_int(dest)
+                    else:
+                        self.raise_exception('Invalid global variable: "' + expression + '".')
+
                 else:
-                    self.raise_exception('Invalid global variable: "' + expression + '".')
+                    self.stringdata[dest] = expression
+                    self.refs[dest] = 's'
 
-            else:
+            elif clarifiers in ('e', 'p', '1', '1p', 'p1'):
+
+                if expression[0] == '@':
+                    self.refs[dest] = clarifiers
+                    if expression != '@':
+                        self.add_command(assign_entity(expression, dest))
+                else:
+                    self.raise_exception('"' + expression + '" is not a valid entity.')
+
+            elif clarifiers == 'i':
+
+                if expression.isdigit():  # an integer constant
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(assign_int(expression, dest, self.namespace))
+
+                elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
+
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(augment_int(dest, refpath, '=', self.namespace))
+
+                else:
+                    self.raise_exception('"' + expression + '" is not a valid integer or integer variable.')
+
+            elif clarifiers == 's':
                 self.stringdata[dest] = expression
                 self.refs[dest] = 's'
+
+            else:
+                self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
 
         # augmented assignment (for integers)
         elif len(tokens) > 2 and (

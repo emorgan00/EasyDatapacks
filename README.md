@@ -494,7 +494,7 @@ def example:
     z#s = 20
     tp @p x y z
 ```
-This will work. In general, if something isn't the data type you want it to be, you can place a clarifier on the variable or parameter name to fix it.
+This will work. In general, if something isn't the data type you want it to be, you can place a clarifier on the variable or parameter name to fix it. If no clarifier is supplied, the compiler will "guess" what data type you are using, but that guess can sometimes be wrong, like in the above example.
 
 For those who may be wondering, the following are all also valid:
 ```
