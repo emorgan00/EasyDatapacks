@@ -478,7 +478,7 @@ The above program would give me 1 chicken and 1 bread, and then say `Here, take 
 
 ## Resolving Type Conflicts
 
-Suppose I have the following program:
+Suppose you have the following program:
 ```
 def example:
     x = 10
@@ -503,6 +503,22 @@ def example:
     stand#e = summon armor_stand ~ ~ ~
     number#i = 15
     text#s = @e
+```
+
+## Parameter Defaults
+
+Suppose you want to have a function that has an optional argument, called `shout`, which you call in two different ways:
+```
+shout "Hello"
+# prints "Hello!!!!"
+
+shout "Goodbye" blue
+# prints "Goodbye!!!!" in blue
+```
+As you can see, the argument for the color is optional. To create a function like this, we can use parameter defaults. We will have a parameter for our function called `color`, which has a default value of `white` when not provided. Here is what the syntax looks like:
+```
+def shout message#s color#s=white:
+    tellraw @a [{"text":"","color#v":"color"},message,"!!!!"]
 ```
 
 ## Comments
