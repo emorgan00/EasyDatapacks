@@ -237,10 +237,6 @@ class Function:
         for ref in self.locals:
             if self.refs[ref] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                 self.add_command(clear_tag(ref))
-            elif self.refs[ref] == 's':  # a string
-                self.stringdata.pop(ref)
-            else:  # something else
-                pass
 
             self.refs.pop(ref)
 
@@ -744,7 +740,7 @@ class Function:
         for f in funcdata:
             if f[-1] == '\\':
                 self.raise_exception('"\\" cannot be the last character of a string.')
-        
+
         return '!f{' + funcname + '}' + ''.join('{' + f.replace('}','\\}').replace('{','\\{') + '}' for f in funcdata)
 
     # this is called after spawning a forked function. It checks if the function has a break/continue,
