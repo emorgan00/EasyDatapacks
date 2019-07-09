@@ -80,7 +80,6 @@ class Function:
         out += str(self.params)
         out += ' (' + str('.'.join(self.infunc[1:])) + ')'
         out += ' (' + str('.'.join(self.inloop[1:])) + ')' if self.inloop is not None else ' () '
-        out += str(self.stringdata)
         out += '\n\n\t' + '\n\t'.join(self.commands) + '\n'
         return out
 
@@ -238,6 +237,8 @@ class Function:
         for ref in self.locals:
             if self.refs[ref] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                 self.add_command(clear_tag(ref))
+            elif self.refs[ref] == 's':  # a string
+                self.stringdata.pop(ref)
             else:  # something else
                 pass
 
