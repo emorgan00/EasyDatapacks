@@ -80,14 +80,17 @@ class Namespace:
                 raise CompilationSyntaxError(out)
             lines.append((td, line.strip(), i + 1))
 
-        Function(['main'], {}, lines, self, 0, 0, None, None).compile()
+        Function(['main'], {}, lines, self, 0, 0, None, None, {}).compile()
 
         # post-process
-        for funcname in self.functions:
-            func = self.functions[funcname]
+        funcpointer = 0
+        while funcpointer < len(self.functions):
+            func = tuple(self.functions.values())[funcpointer]
             
             for i, line in enumerate(func.commands):
                 func.commands[i] = self.post_process_line(line)
+
+            funcpointer += 1
 
         # prune unused functions
         unused = []
@@ -106,7 +109,7 @@ class Namespace:
 
             if 'main.load' not in self.functions:
                 print('\nautomatically creating missing load function...')
-                self.functions['main.load'] = Function(['main', 'load'], {}, [], self, 0, 0, ['main', 'load'], None)
+                self.functions['main.load'] = Function(['main', 'load'], {}, [], self, 0, 0, ['main', 'load'], None, {})
 
             load = self.functions['main.load']
 
@@ -153,13 +156,43 @@ class Namespace:
             callfunc = self.functions[callfuncname]
 
             if len(data) > 1:  # string params
-                print(data)
+
+                stringdata = {}
+                i = 1
+                for param in callfunc.params:
+                    if callfunc.params[param] == 's':
+                        stringdata[callfuncname + '.' + param] = data[i]
+                        i += 1
+
+                callfuncname = self.instantiate_string_function(callfuncname, stringdata)
+                callfunc = self.functions[callfuncname]
 
             if len(callfunc.commands) > 1:
                 callfunc.used = True
                 return line[:start] + 'function ' + self.pack + ':' + callfuncname[5:]
-            else:
+            elif len(callfunc.commands) == 1:
                 # if a function is only 1 command, just execute it directly.
                 return line[:start] + self.post_process_line(callfunc.commands[0])
+            else:
+                return line
 
         return line
+
+    def instantiate_string_function(self, funcname, data):
+
+        func = self.functions[funcname]
+        newpath = func.path + ['s' + str(func.instancecounter)]
+        func.instancecounter += 1
+
+        params = {p: func.params[p] for p in func.params if func.params[p] != 's'}
+        
+        data = data.copy()
+        data.update(func.stringdata)
+        copy = Function(newpath, params, func.lines, self,
+                        func.pointer, func.expecteddepth, func.infunc, func.inloop, data)
+
+        copy.compile()
+        self.functions[copy.name] = copy
+
+        return copy.name
+

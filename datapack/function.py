@@ -12,7 +12,7 @@ class CompilationSyntaxError(CompilationError):
 
 class Function:
 
-    def __init__(self, path, params, lines, namespace, start, expecteddepth, infunc, inloop):
+    def __init__(self, path, params, lines, namespace, start, expecteddepth, infunc, inloop, stringdata):
 
         # master list of all generated vanilla commands in the function
         self.commands = []
@@ -53,6 +53,9 @@ class Function:
         self.instancecounter = 0
         self.instantiable = 's' in params.values()
 
+        # values for string parameters
+        self.stringdata = stringdata
+
         # stores the content of the line before the one we are currently parsing. Currently only used for if-else logic.
         self.pastline = ''
 
@@ -69,14 +72,15 @@ class Function:
         # before it has been compiled.
         for p in self.params:
             if self.params[p] == 'i':
-                self.namespace.add_int(self.name + '.' + p)
+                self.namespace.add_int('.'.join(self.infunc) + '.' + p)
 
     def __str__(self):
 
         out = self.name[5:] + ': '
         out += str(self.params)
         out += ' (' + str('.'.join(self.infunc[1:])) + ')'
-        out += ' (' + str('.'.join(self.inloop[1:])) + ')' if self.inloop is not None else ' ()'
+        out += ' (' + str('.'.join(self.inloop[1:])) + ')' if self.inloop is not None else ' () '
+        out += str(self.stringdata)
         out += '\n\n\t' + '\n\t'.join(self.commands) + '\n'
         return out
 
@@ -174,8 +178,15 @@ class Function:
 
         # pre-process params into local variables
         for p in self.params:
-            self.refs[self.name + '.' + p] = self.params[p]
-            self.locals.append(self.name + '.' + p)
+            self.refs['.'.join(self.infunc) + '.' + p] = self.params[p]
+            self.locals.append('.'.join(self.infunc) + '.' + p)
+
+        # pre-process stringdata into local variables
+        for p in self.stringdata:
+            self.refs[p] = 's'
+            self.locals.append(p)
+
+        print(self.name + str(self.refs))
 
         # pre-process function headers:
         for i, p in enumerate(self.lines[self.pointer:]):
@@ -213,8 +224,7 @@ class Function:
                     self.raise_exception('Duplicate function "' + funcpath[-1] + '"')
 
                 self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, self.lines, self.namespace,
-                                                              self.pointer + i + 1, depth + 1, funcpath, None)
-                self.functions['.'.join(funcpath)].used = True
+                                                              self.pointer + i + 1, depth + 1, funcpath, None, self.stringdata)
 
         # process lines
         while self.pointer < len(self.lines):
@@ -269,7 +279,10 @@ class Function:
                 return out + (' ' if expression[-1] == ' ' else '')
 
             elif self.refs[path] == 's':  # string parameter
-                return '!s{' + path + '}' + (' ' if expression[-1] == ' ' else '')
+                if path in self.stringdata:
+                    return self.stringdata[path] + (' ' if expression[-1] == ' ' else '')
+                else:
+                    return '!s{' + path + '}' + (' ' if expression[-1] == ' ' else '')
 
         # a simple constant
         return expression
@@ -398,7 +411,10 @@ class Function:
         # definining a new function
         elif tokens[0].strip() == 'def':
 
-            self.functions[self.name + '.' + tokens[1].strip()].compile()
+            func = self.functions[self.name + '.' + tokens[1].strip()]
+            if not func.instantiable:
+                func.compile()
+                func.used = True
 
         # calling a custom function
         elif funcpath is not None:
@@ -668,7 +684,7 @@ class Function:
 
         try:
             self.functions[funcname] = Function(funcpath, {}, self.lines, self.namespace, newpointer, newdepth,
-                                                self.infunc, inloop)
+                                                self.infunc, inloop, self.stringdata)
             # if this is a break-chain, we should carry over the pastline because its the same level of indentation
             if code == 'b':
                 self.functions[funcname].pastline = self.lines[self.pointer][1]
