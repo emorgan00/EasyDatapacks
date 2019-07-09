@@ -202,14 +202,17 @@ class Function:
                 funcparams = {}
                 for token in (''.join(tokens[2:])).split(' '):
                     token = token.strip(':')
+                    param = token.split('#')
                     if len(token) == 0:
                         continue
-                    if valid_name(token):
-                        param = token.split('#')
+                    if valid_name(param[0]):
+                        print(param)
                         if len(param) == 1:
                             funcparams[token] = 'e'
                         elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
                             funcparams[param[0]] = param[1]
+                        elif param[1] in ('e1', '1e'):
+                            funcparams[param[0]] = '1'
                         else:
                             self.raise_exception(
                                 'Invalid parameter clarifier "' + token.strip() + '" for function "' + tokens[

@@ -18,7 +18,7 @@ Indentation in EasyDatapacks is either a single tab, or 4 spaces.
 
 ## Parameters?!
 
-Normally, functions can only be run as-is and don’t accept any parameters. EasyDatapacks allows you to include entities (and integers) as parameters. (note: the “#p” at the end of the parameter is a clarifier. Ignore it for now, it will be explained later on.)
+Normally, functions can only be run as-is and don’t accept any parameters. EasyDatapacks allows you to include entities parameters. (note: the “#p” at the end of the parameter is a clarifier. Ignore it for now, it will be explained later on.)
 ```
 def greet player:
     tellraw player#p “Hello!”
@@ -30,7 +30,7 @@ def impersonate A B:
 ```
 ## Calling Functions
 
-Guess what, functions aren’t functions anymore. They are commands. The /function command is no longer used. With def, you are creating a brand new command which you can use just like vanilla commands. The only difference is that your new command only has entities (and integers) as parameters. Here’s an example:
+Guess what, functions aren’t functions anymore. They are commands. The /function command is no longer used. With def, you are creating a brand new command which you can use just like vanilla commands. Here’s an example:
 ```
 def greet player:
     tellraw player#p “Hello!”
