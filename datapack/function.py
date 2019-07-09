@@ -490,7 +490,7 @@ class Function:
                             augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
 
                 elif func.params[p] == 's':  # a string
-                    funcdata.append(self.process_expression(expression))
+                    funcdata.append(self.process_tokens(tokenize(expression)))
 
             self.add_command(self.call_function(funcpath, *funcdata))
 
