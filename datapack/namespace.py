@@ -29,6 +29,9 @@ class Namespace:
 
     def add_constant(self, value):
 
+        if value in self.consts:
+            return 'CONSTANT.'+str(self.consts.index(value))
+
         self.consts.append(value)
         ref = 'CONSTANT.' + str(len(self.consts) - 1)
         self.intmap[ref] = ref[-16:]
