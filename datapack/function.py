@@ -183,10 +183,9 @@ class Function:
 
         # pre-process stringdata into local variables
         for p in self.stringdata:
-            self.refs[p] = 's'
-            self.locals.append(p)
-
-        print(self.name + str(self.refs))
+            if p not in self.refs:
+                self.refs[p] = 's'
+                self.locals.append(p)
 
         # pre-process function headers:
         for i, p in enumerate(self.lines[self.pointer:]):
