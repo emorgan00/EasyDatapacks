@@ -195,10 +195,12 @@ class Function:
                 break
             if p[0] > depth:
                 continue
-            if p[1][:3] == 'def':
+            if p[1].startswith('def'):
 
                 self.pointer = i
                 tokens = tokenize(p[1])
+                if len(tokens) < 2:
+                    self.raise_exception('No function name provided.')
                 funcpath = self.path + [tokens[1].strip()]
                 if not valid_name(tokens[1].strip()):
                     self.raise_exception('Invalid function name: "' + tokens[1].strip() + '".')

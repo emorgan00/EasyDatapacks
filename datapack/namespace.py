@@ -92,10 +92,9 @@ class Namespace:
         funcpointer = 0
         while funcpointer < len(self.functions):
             func = tuple(self.functions.values())[funcpointer]
-            
-            if func.used:
-                for i, line in enumerate(func.commands):
-                    func.commands[i] = self.post_process_line(line)
+
+            for i, line in enumerate(func.commands):
+                func.commands[i] = self.post_process_line(line)
 
             funcpointer += 1
 
