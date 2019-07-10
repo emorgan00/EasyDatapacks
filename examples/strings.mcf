@@ -1,15 +1,15 @@
 # this is a global variable which can be referenced from any function.
-packname#s = mydatapack
+packname#s = "mydatapack"
 
 def print message#s:
 	
 	# will print "[<packname>] <message>".
-	tellraw @a [{"text":"[","color":"white"},{"text":"packname","color":"green"},"] ",message]
+	tellraw @a [{"text":"[","color":"white"},{"text":packname,"color":"green"},"] ",message]
 
 def whoosh player#p x#s y#s z#s:
 
 	# will print "[<packname>] Whooshing you all the way to <x> <y> <z>!"
-	print ["Whooshing you all the way to ", "x", " ", "y", " ", "z", "!"]
+	print ["Whooshing ",{"selector":"player"}," all the way to ","x"," ","y"," ","z","!"]
 	tp player x y z
 
 def load:
@@ -22,3 +22,4 @@ def load:
 
 	whoosh @p 4 20 69
 	# "[mydatapack] Whooshing you all the way to 4 20 69!"
+
