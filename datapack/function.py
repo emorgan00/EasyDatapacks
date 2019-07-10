@@ -202,7 +202,7 @@ class Function:
                 if len(tokens) < 2:
                     self.raise_exception('No function name provided.')
                 funcpath = self.path + [tokens[1].strip()]
-                if not valid_name(tokens[1].strip()):
+                if not valid_function(tokens[1].strip()):
                     self.raise_exception('Invalid function name: "' + tokens[1].strip() + '".')
 
                 funcparams = {}

@@ -77,7 +77,13 @@ def tab_depth(line, tab_width):
 # returns whether this is a valid name for a funcname or parameter
 def valid_name(expression):
     for c in expression:
-        if (not c.isalpha() or c in '#_.'):
+        if not (c.isalpha() or c in '#_'):
+            return False
+    return True
+
+def valid_function(expression):
+    for c in expression:
+        if not (c.isalpha() or c in '_'):
             return False
     return True
 
