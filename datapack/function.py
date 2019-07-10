@@ -216,6 +216,11 @@ class Function:
                     equals = token.split('=')
                     param = equals[0].split('#')
                     if len(equals) > 1:
+                        try:
+                            if param[1] != 's':
+                                self.raise_exception('Default parameter values are only for strings.')
+                        except:
+                            self.raise_exception('Default parameter values are only for strings.')
                         default = '='.join(equals[1:])
                         hasdefault = True
 
