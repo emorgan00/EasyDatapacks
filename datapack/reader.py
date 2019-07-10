@@ -82,4 +82,7 @@ def valid_name(expression):
     return True
 
 def valid_int(expression):
-    return expression[1:].isdigit() and expression[0] in '-0123456789'
+    if len(expression) > 1:
+        return expression[1:].isdigit() and expression[0] in '-0123456789'
+    else:
+        return expression.isdigit()
