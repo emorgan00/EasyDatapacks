@@ -383,6 +383,8 @@ class Function:
                         self.refs[dest] = expression[1:]
                         if expression[1:] == 'i':
                             self.namespace.add_int(dest)
+                    elif expression[1:] in ('e1', '1e'):
+                        self.refs[dest] = '1'
                     else:
                         self.raise_exception('Invalid global variable: "' + expression + '".')
 
@@ -390,10 +392,13 @@ class Function:
                     self.stringdata[dest] = expression
                     self.refs[dest] = 's'
 
-            elif clarifiers in ('e', 'p', '1', '1p', 'p1'):
+            elif clarifiers in ('e', 'p', '1', '1p', 'p1', 'e1', '1e'):
 
                 if expression[0] == '@':
-                    self.refs[dest] = clarifiers
+                    if clarifiers in ('e1', '1e'):
+                        self.refs[dest] = '1'
+                    else:
+                        self.refs[dest] = clarifiers
                     if expression != '@':
                         self.add_command(assign_entity(expression, dest))
                 else:
