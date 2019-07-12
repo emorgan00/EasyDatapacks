@@ -521,6 +521,38 @@ def shout message#s color#s=white:
     tellraw @a [{"text":"","color#v":"color"},message,"!!!!"]
 ```
 
+## Including Other Files
+
+For larger projects, you may wish to spread your code out across multiple files. You can compile all of these at once by listing them all out when you compile (more on this in the "Compiling" section), but this can be quite tedious if have more than 1 or 2 files. Instead, you can just `include` one file at the top of another file, and only compile the second file. This may sound confusing, so here's a worked example:
+
+Let's say you have two files, called `main.mcf` and `extra.mcf`. The contents of each file is as follows:
+
+main.mcf
+```
+def load:
+    give_food player
+```
+
+extra.mcf
+```
+def give_food player#p:
+    give player chicken 32
+```
+
+Both files are stored side-by-side in the same folder. Right now, if we compile `main.mcf`, it won't work because give_food isn't defined in that file. We can fix this by including `extra.mcf` at the top of `main.mcf`, as follows:
+
+main.mcf
+```
+include extra.mcf
+def load:
+    give_food player
+```
+
+If the file you want to include isn't in the same folder, you can still include it by specifying the relative path to that file, for example:
+```
+include ../path/to/extra.mcf
+```
+
 ## Comments
 
 Comments in EasyDatapacks work exactly the same as in normal commands. Just put a "#"" at the beginning of the line, and everything on that line will be ignored. Comments can also be placed at the end of a line. Just enter a space, then a "#", then another space, and everything onwards will be ignored.
@@ -543,13 +575,17 @@ EasyDatapacks uses a compiler written in python. The file which you create will 
 
 Code on GitHub: https://github.com/emorgan00/EasyDatapacks
 
-## Compiling from the Command Line
+## Installing
 
 First things first, you'll need to install EasyDatapacks:
-
 ```sh
 $ pip install --user git+https://github.com/emorgan00/EasyDatapacks
 ```
+Once you're done installing, be sure that the location of the datapack.exe executable is within your system PATH variable. If it isn't, there will be a warning somewhere in the output of the command above.
+
+If the installation was successfull, typing `datapack` on the command line should output "A command is required". 
+
+## Compiling
 
 To use the command line interface, run:
 
