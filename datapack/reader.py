@@ -56,7 +56,6 @@ def broad_tokenize(line):
         elif subtoken in ']}':
             depth -= 1
 
-        if depth == 0 and not quote and token[-1] == ' ':
         if depth == 0 and not squote and not dquote and token[-1] == ' ':
             if len(token.strip()) > 0:
                 stack.append(token.strip())
