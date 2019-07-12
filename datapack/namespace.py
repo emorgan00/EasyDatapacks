@@ -1,3 +1,5 @@
+import os
+
 from .commands import *
 from .function import *
 from .reader import *
@@ -43,15 +45,36 @@ class Namespace:
             self.ints.add(ref)
             self.intmap[ref] = (ref + '.' + str(len(self.intmap)))[-16:]
 
+    def add_file(self, path):
+
+        if not path.endswith('.mcf'):
+            path += '.mcf'
+        path = os.path.abspath(path)
+
+        if os.path.isfile(path) and not any(os.path.samefile(f, path) for f in self.files):
+            print('importing "' + path + '"...')
+            self.files.append(path)
+        else:
+            print('failed to import "' + path + '".')
+
     def compile(self, verbose):
 
         rawlines = []
 
-        # compile all files
+        # read all files
         for file in self.files:
             with open(file, 'r') as f:
-                name = file.split('/')[-1].split('\\')[-1].split('.')[0]
-                rawlines += f.readlines()
+                name = file.split('/')[-1].split('\\')[-1]
+                base = file.replace(name, '')
+
+                # handle imports
+                for line in f.readlines():
+                    if line.startswith('include '):
+                        newfile = line[8:].strip()
+                        path = os.path.join(base, newfile)
+                        self.add_file(path)
+                    else:
+                        rawlines.append(line)
 
         # auto-detect tab width
         tab_width = 4
