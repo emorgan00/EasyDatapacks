@@ -2,16 +2,22 @@
 def tokenize(line):
     tokens = []
     buff = ''
-    inquote = False
+    squote, dquote = False, False
 
     for ch in line:
-        if ch in '"\'':
+        if ch == '"' and not squote:
             if len(buff) > 0:
                 tokens.append(buff)
             tokens.append(ch)
             buff = ''
-            inquote = not inquote
-        elif inquote:
+            dquote = not dquote
+        elif ch == '\'' and not dquote:
+            if len(buff) > 0:
+                tokens.append(buff)
+            tokens.append(ch)
+            buff = ''
+            squote = not squote
+        elif squote or dquote:
             buff += ch
             continue
         elif ch in '=,{}[]():+-*<>%\\/':
@@ -36,19 +42,22 @@ def tokenize(line):
 def broad_tokenize(line):
     tokens = tokenize(line)
 
-    stack, token, depth, quote = [], '', 0, False
+    stack, token, depth, squote, dquote = [], '', 0, False, False
 
     for subtoken in tokens:
         token += subtoken
 
-        if subtoken in '"\'':
-            quote = not quote
+        if subtoken == '"' and not squote:
+            dquote = not dquote
+        if subtoken == '\'' and not dquote:
+            squote = not squote
         elif subtoken in '[{':
             depth += 1
         elif subtoken in ']}':
             depth -= 1
 
         if depth == 0 and not quote and token[-1] == ' ':
+        if depth == 0 and not squote and not dquote and token[-1] == ' ':
             if len(token.strip()) > 0:
                 stack.append(token.strip())
                 token = ''
