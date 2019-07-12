@@ -12,7 +12,7 @@ class CompilationSyntaxError(CompilationError):
 
 class Function:
 
-    def __init__(self, path, params, lines, namespace, start, expecteddepth, infunc, inloop):
+    def __init__(self, path, params, defaults, lines, namespace, start, expecteddepth, infunc, inloop, stringdata):
 
         # master list of all generated vanilla commands in the function
         self.commands = []
@@ -32,6 +32,7 @@ class Function:
 
         # the parameters supplied to this function, follows the same format as refs
         self.params = params
+        self.defaults = defaults
 
         # the raw user input. an element of the list is in the format (tab-depth, str-content, line-number)
         self.lines = lines
@@ -48,11 +49,18 @@ class Function:
         # stores the number of times this function has forked to another function. Used to ensure unique function names.
         self.relcounter = 0
 
+        # stores the number of times this string-parametered function has instantiated. Used to ensure unique function names.
+        # functions without string parameters will never use this.
+        self.instancecounter = 0
+        self.instantiable = 's' in params.values()
+
+        # values for string parameters
+        self.stringdata = stringdata
+
         # stores the content of the line before the one we are currently parsing. Currently only used for if-else logic.
         self.pastline = ''
 
-        # this will get set to true when this function is called by another function. Unused functions will get
-        # "collapsed".
+        # this will get set to true when this function is called by another function. Unused functions will get "collapsed".
         self.used = False
 
         # stuff with break/return
@@ -65,14 +73,14 @@ class Function:
         # before it has been compiled.
         for p in self.params:
             if self.params[p] == 'i':
-                self.namespace.add_int(self.name + '.' + p)
+                self.namespace.add_int('.'.join(self.infunc) + '.' + p)
 
     def __str__(self):
 
         out = self.name[5:] + ': '
         out += str(self.params)
         out += ' (' + str('.'.join(self.infunc[1:])) + ')'
-        out += ' (' + str('.'.join(self.inloop[1:])) + ')' if self.inloop is not None else ' ()'
+        out += ' (' + str('.'.join(self.inloop[1:])) + ')' if self.inloop is not None else ' () '
         out += '\n\n\t' + '\n\t'.join(self.commands) + '\n'
         return out
 
@@ -171,8 +179,16 @@ class Function:
 
         # pre-process params into local variables
         for p in self.params:
-            self.refs[self.name + '.' + p] = self.params[p]
-            self.locals.append(self.name + '.' + p)
+            self.refs['.'.join(self.infunc) + '.' + p] = self.params[p]
+            self.locals.append('.'.join(self.infunc) + '.' + p)
+
+        # pre-process stringdata into local variables
+        for p in self.stringdata:
+            if p not in self.refs:
+                self.refs[p] = 's'
+                self.locals.append(p)
+
+        storepointer = self.pointer
 
         # pre-process function headers:
         for i, p in enumerate(self.lines[self.pointer:]):
@@ -180,38 +196,65 @@ class Function:
                 break
             if p[0] > depth:
                 continue
-            if p[1][:3] == 'def':
+            if p[1].startswith('def'):
 
+                self.pointer = i
                 tokens = tokenize(p[1])
+                if len(tokens) < 2:
+                    self.raise_exception('No function name provided.')
                 funcpath = self.path + [tokens[1].strip()]
-                if not valid_name(tokens[1].strip()):
+                if not valid_function(tokens[1].strip()):
                     self.raise_exception('Invalid function name: "' + tokens[1].strip() + '".')
 
                 funcparams = {}
+                funcdefaults = {}
+                hasdefault = False
+
                 for token in (''.join(tokens[2:])).split(' '):
                     token = token.strip(':')
+                    default = None
+
+                    equals = token.split('=')
+                    param = equals[0].split('#')
+                    if len(equals) > 1:
+                        try:
+                            if param[1] != 's':
+                                self.raise_exception('Default parameter values are only for strings.')
+                        except:
+                            self.raise_exception('Default parameter values are only for strings.')
+                        default = '='.join(equals[1:])
+                        hasdefault = True
+
+                    if default is None and hasdefault:
+                        self.raise_exception('Can\'t have a non-default parameter after a default parameter.')
+                    
                     if len(token) == 0:
                         continue
-                    if valid_name(token):
-                        param = token.split('#')
+                    if valid_name(param[0]):
                         if len(param) == 1:
                             funcparams[token] = 'e'
-                        elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1'):
+                        elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
                             funcparams[param[0]] = param[1]
+                        elif param[1] in ('e1', '1e'):
+                            funcparams[param[0]] = '1'
                         else:
                             self.raise_exception(
-                                'Invalid parameter clarifier: "' + token.strip() + '" for function ' + tokens[
-                                    1].strip() + '.')
+                                'Invalid parameter clarifier "' + token.strip() + '" for function "' + tokens[
+                                    1].strip() + '".')
+
+                        if default:
+                            funcdefaults[param[0]] = default
                     else:
                         self.raise_exception(
-                            'Invalid parameter name "' + token.strip() + '" for function ' + tokens[1].strip() + '.')
+                            'Invalid parameter name "' + token.strip() + '" for function "' + tokens[1].strip() + '".')
 
                 if '.'.join(funcpath) in self.functions:
                     self.raise_exception('Duplicate function "' + funcpath[-1] + '"')
 
-                self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, self.lines, self.namespace,
-                                                              self.pointer + i + 1, depth + 1, funcpath, None)
-                self.functions['.'.join(funcpath)].used = True
+                self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, funcdefaults, self.lines, self.namespace,
+                                                              storepointer + i + 1, depth + 1, funcpath, None, self.stringdata)
+
+        self.pointer = storepointer
 
         # process lines
         while self.pointer < len(self.lines):
@@ -226,8 +269,6 @@ class Function:
         for ref in self.locals:
             if self.refs[ref] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                 self.add_command(clear_tag(ref))
-            else:  # something else
-                pass
 
             self.refs.pop(ref)
 
@@ -236,6 +277,9 @@ class Function:
 
         components = expression.strip().split('#')
         ref = components[0]
+
+        if len(components) == 2 and components[1] == 'v':
+            return ref
 
         path = self.reference_path(ref)
         if path is not None:  # some reference
@@ -257,13 +301,17 @@ class Function:
                         out = select_int(path, self.namespace)
                     elif clarifiers == 't':
                         out = text_int(path, self.namespace)
-                    elif clarifiers == 'v':
-                        out = ref
                     else:
                         self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
                 else:
                     out = select_int(path, self.namespace)
                 return out + (' ' if expression[-1] == ' ' else '')
+
+            elif self.refs[path] == 's':  # string parameter
+                if path in self.stringdata:
+                    return self.stringdata[path] + (' ' if expression[-1] == ' ' else '')
+                else:
+                    return '!s{' + path + '}' + (' ' if expression[-1] == ' ' else '')
 
         # a simple constant
         return expression
@@ -285,17 +333,25 @@ class Function:
 
             if len(tokens) == 2:
                 self.raise_exception('Expected something after "=".')
-            dest = self.reference_path(tokens[0].strip())
+
+            destdata = tokens[0].strip().split('#')
+            dest = self.reference_path(destdata[0])
+
+            clarifiers = ''
+            if len(destdata) == 2:
+                clarifiers = destdata[1]
 
             # assigning something for the first time
             if dest is None:
-                dest = self.name + '.' + tokens[0].strip()
+                dest = self.name + '.' + destdata[0]
                 self.locals.append(dest)
 
             # clearing an old assignment
             else:
                 if self.refs[dest] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                     self.add_command(clear_tag(dest))
+                elif self.refs[dest] == 's':  # a string
+                    self.raise_exception('Strings are handled at compile time, so overwriting a string may produce undefined behavior.')
                 else:  # something else
                     pass
 
@@ -303,30 +359,74 @@ class Function:
             expression = self.process_tokens(tokens[2:], True, dest=dest)
             refpath = self.reference_path((''.join(tokens[2:])).strip())
 
-            if expression.isdigit():  # an integer constant
-                self.refs[dest] = 'i'
-                self.namespace.add_int(dest)
-                self.add_command(assign_int(expression, dest, self.namespace))
+            if clarifiers == '':
 
-            elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
-                self.refs[dest] = 'i'
-                self.namespace.add_int(dest)
-                self.add_command(augment_int(dest, refpath, '=', self.namespace))
+                if valid_int(expression):  # an integer constant
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(assign_int(expression, dest, self.namespace))
 
-            elif expression[0] == '@':  # an entity
+                elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
 
-                self.refs[dest] = 'e'
-                self.add_command(assign_entity(expression, dest))
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(augment_int(dest, refpath, '=', self.namespace))
 
-            elif expression[0] == '#':  # a clarifier
+                elif expression[0] == '@':  # an entity
 
-                if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1'):
-                    self.refs[dest] = expression[1:]
+                    self.refs[dest] = 'e'
+                    if expression != '@':
+                        self.add_command(assign_entity(expression, dest))
+
+                elif expression[0] == '#':  # a clarifier
+
+                    if expression[1:] in ('e', 'i', 'p', '1', '1p', 'p1'):
+                        self.refs[dest] = expression[1:]
+                        if expression[1:] == 'i':
+                            self.namespace.add_int(dest)
+                    elif expression[1:] in ('e1', '1e'):
+                        self.refs[dest] = '1'
+                    else:
+                        self.raise_exception('Invalid global variable: "' + expression + '".')
+
                 else:
-                    self.raise_exception('Invalid global variable: "' + expression + '".')
+                    self.stringdata[dest] = expression
+                    self.refs[dest] = 's'
 
-            else:  # something else
-                self.raise_exception('Cannot assign "' + expression + '" to variable.')
+            elif clarifiers in ('e', 'p', '1', '1p', 'p1', 'e1', '1e'):
+
+                if expression[0] == '@':
+                    if clarifiers in ('e1', '1e'):
+                        self.refs[dest] = '1'
+                    else:
+                        self.refs[dest] = clarifiers
+                    if expression != '@':
+                        self.add_command(assign_entity(expression, dest))
+                else:
+                    self.raise_exception('"' + expression + '" is not a valid entity.')
+
+            elif clarifiers == 'i':
+
+                if valid_int(expression):  # an integer constant
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(assign_int(expression, dest, self.namespace))
+
+                elif refpath in self.refs and self.refs[refpath] == 'i':  # an integer variable
+
+                    self.refs[dest] = 'i'
+                    self.namespace.add_int(dest)
+                    self.add_command(augment_int(dest, refpath, '=', self.namespace))
+
+                else:
+                    self.raise_exception('"' + expression + '" is not a valid integer or integer variable.')
+
+            elif clarifiers == 's':
+                self.stringdata[dest] = expression
+                self.refs[dest] = 's'
+
+            else:
+                self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
 
         # augmented assignment (for integers)
         elif len(tokens) > 2 and (
@@ -357,7 +457,7 @@ class Function:
                 self.raise_exception('Cannot perform augmented assignment on "' + var + '"')
 
             inref = self.reference_path(expression)
-            if inref is None and expression.isdigit():  # int constant
+            if inref is None and valid_int(expression):  # int constant
                 if op == '+=':
                     self.add_command(add_int(expression, dest, self.namespace))
                 elif op == '-=':
@@ -388,7 +488,10 @@ class Function:
         # definining a new function
         elif tokens[0].strip() == 'def':
 
-            self.functions[self.name + '.' + tokens[1].strip()].compile()
+            func = self.functions[self.name + '.' + tokens[1].strip()]
+            if not func.instantiable:
+                func.compile()
+                func.used = True
 
         # calling a custom function
         elif funcpath is not None:
@@ -402,13 +505,18 @@ class Function:
             if len(givenparams) > len(func.params):
                 self.raise_exception('Too many parameters for function "' + tokens[0].strip() + '".')
 
+            funcdata = []
+
             for i, p in enumerate(func.params):
 
                 expression = None
                 try:
                     expression = self.process_expression(givenparams[i]).strip()
                 except IndexError:
-                    self.raise_exception('Not enough paramaters for function "' + tokens[0].strip() + '".')
+                    if p in func.defaults:
+                        expression = func.defaults[p]
+                    else:
+                        self.raise_exception('Not enough parameters for function "' + tokens[0].strip() + '".')
 
                 if func.params[p] in ('e', 'p', '1', '1p', 'p1'):  # an entity
                     self.add_command(assign_entity(expression, func.name + '.' + p))
@@ -420,7 +528,10 @@ class Function:
                         self.add_command(
                             augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
 
-            self.add_command(self.call_function(funcpath))
+                elif func.params[p] == 's':  # a string
+                    funcdata.append(self.process_tokens(tokenize(expression)))
+
+            self.add_command(self.call_function(funcpath, *funcdata))
 
         # implicit execute
         elif tokens[0].strip() in (
@@ -452,7 +563,8 @@ class Function:
             # we know the pastline is valid, otherwise it would have already thrown an exception last time
             pastfuncname = self.function_path('e'+str(self.relcounter-2))
             entity = '@e[tag=' + funcname + '.ELSE]'
-            summon = 'execute unless entity ' + entity + ' run summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + funcname + '.ELSE"]}'
+            summon = 'execute unless entity ' + entity + ' run summon area_effect_cloud 0 0 0 {Age:-2147483648,Duration:-1,WaitTime:-2147483648,Tags:["' + \
+                funcname + '.ELSE"]}'
             self.functions[pastfuncname].commands.insert(0, summon)
 
             call = 'execute unless entity ' + entity + ' '
@@ -508,9 +620,9 @@ class Function:
             self.add_command(call)
             self.functions[funcname].call_loop(funcname, call)
             if self.functions[funcname].hasbreak:
-                self.add_command('kill @e[type=armor_stand,tag=' + funcname + '.BREAK]')
+                self.add_command('kill @e[tag=' + funcname + '.BREAK]')
             if self.functions[funcname].hascontinue:
-                self.add_command('kill @e[type=armor_stand,tag=' + funcname + '.CONTINUE]')
+                self.add_command('kill @e[tag=' + funcname + '.CONTINUE]')
 
         # break
         elif tokens[0].strip() == 'break':
@@ -518,7 +630,7 @@ class Function:
                 self.raise_exception('"break" outside of loop.')
 
             self.hasbreak = True
-            self.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + '.'.join(
+            self.add_command('summon area_effect_cloud 0 0 0 {Age:-2147483648,Duration:-1,WaitTime:-2147483648,Tags:["' + '.'.join(
                 self.inloop) + '.BREAK"]}')
 
         # continue
@@ -527,7 +639,7 @@ class Function:
                 self.raise_exception('"continue" outside of loop.')
 
             self.hascontinue = True
-            self.add_command('summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,Tags:["' + '.'.join(
+            self.add_command('summon area_effect_cloud 0 0 0 {Age:-2147483648,Duration:-1,WaitTime:-2147483648,Tags:["' + '.'.join(
                 self.inloop) + '.CONTINUE"]}')
 
         # vanilla command
@@ -623,6 +735,7 @@ class Function:
     # 'e' = implicit execution
     # 'r' = repeat loop body
     # 'b' = chained continue/break-check function
+    # 's' = forked string function (not used in this function)
     # returns the name of the function which was generated
     def fork_function(self, code):
 
@@ -648,8 +761,8 @@ class Function:
         funcname = '.'.join(funcpath)
 
         try:
-            self.functions[funcname] = Function(funcpath, {}, self.lines, self.namespace, newpointer, newdepth,
-                                                self.infunc, inloop)
+            self.functions[funcname] = Function(funcpath, {}, {}, self.lines, self.namespace, newpointer, newdepth,
+                                                self.infunc, inloop, self.stringdata)
             # if this is a break-chain, we should carry over the pastline because its the same level of indentation
             if code == 'b':
                 self.functions[funcname].pastline = self.lines[self.pointer][1]
@@ -662,9 +775,13 @@ class Function:
         return funcname
 
     # this will call a sub-function of name <funcname>
-    def call_function(self, funcname):
+    def call_function(self, funcname, *funcdata):
 
-        return '!callfunction '+funcname
+        for f in funcdata:
+            if f[-1] == '\\':
+                self.raise_exception('"\\" cannot be the last character of a string.')
+
+        return '!f{' + funcname + '}' + ''.join('{' + f.replace('}','\\}').replace('{','\\{') + '}' for f in funcdata)
 
     # this is called after spawning a forked function. It checks if the function has a break/continue,
     # and will branch the current function accordingly.
@@ -679,11 +796,11 @@ class Function:
 
             if func.hasbreak:
                 self.hasbreak = True
-                call += 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.BREAK] '
+                call += 'unless entity @e[tag=' + '.'.join(self.inloop) + '.BREAK] '
 
             if func.hascontinue:
                 self.hascontinue = True
-                call += 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] '
+                call += 'unless entity @e[tag=' + '.'.join(self.inloop) + '.CONTINUE] '
 
             # if fork isn't in self.functions, then it was collapsed and we don't have to worry about it.
             if fork in self.functions and len(self.functions[fork].commands) > 0:
@@ -711,20 +828,20 @@ class Function:
         if func.hasbreak or func.hascontinue:
 
             if func.hasbreak:
-                newcall = 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.BREAK] run ' + newcall
+                newcall = 'unless entity @e[tag=' + '.'.join(self.inloop) + '.BREAK] run ' + newcall
 
             if func.hascontinue:
-                newcall = 'unless entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + newcall
+                newcall = 'unless entity @e[tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + newcall
 
             newcall = 'execute ' + newcall
 
         func.commands.append(newcall)
 
-        # if the loop has a continue, we need to reset it to the beginning if we reach the end and continue has been
-        # called
+        # if the loop has a continue,
+        # we need to reset it to the beginning if we reach the end and continue has been called
         if self.functions[funcname].hascontinue:
-            cmd = 'kill @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE]'
+            cmd = 'kill @e[tag=' + '.'.join(self.inloop) + '.CONTINUE]'
             self.functions[funcname].commands.insert(0, cmd)
 
-            cmd = 'execute if entity @e[type=armor_stand,tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + call
+            cmd = 'execute if entity @e[tag=' + '.'.join(self.inloop) + '.CONTINUE] run ' + call
             self.functions[funcname].commands.append(cmd)

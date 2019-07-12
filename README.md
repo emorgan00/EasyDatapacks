@@ -18,7 +18,7 @@ Indentation in EasyDatapacks is either a single tab, or 4 spaces.
 
 ## Parameters?!
 
-Normally, functions can only be run as-is and don’t accept any parameters. EasyDatapacks allows you to include entities (and integers) as parameters. (note: the “#p” at the end of the parameter is a clarifier. Ignore it for now, it will be explained later on.)
+Normally, functions can only be run as-is and don’t accept any parameters. EasyDatapacks allows you to include entities parameters. (note: the “#p” at the end of the parameter is a clarifier. Ignore it for now, it will be explained later on.)
 ```
 def greet player:
     tellraw player#p “Hello!”
@@ -30,7 +30,7 @@ def impersonate A B:
 ```
 ## Calling Functions
 
-Guess what, functions aren’t functions anymore. They are commands. The /function command is no longer used. With def, you are creating a brand new command which you can use just like vanilla commands. The only difference is that your new command only has entities (and integers) as parameters. Here’s an example:
+Guess what, functions aren’t functions anymore. They are commands. The /function command is no longer used. With def, you are creating a brand new command which you can use just like vanilla commands. Here’s an example:
 ```
 def greet player:
     tellraw player#p “Hello!”
@@ -173,17 +173,17 @@ def example2:
 ```
 We had to use `#1` on the target variable because you can only tp to a single entity.
 
-The situation may also arise where you don't want a variable to be replaced with an entity query. For example:
+The situation may also arise where you don't want a variable to be replaced with an entity query. For example, say you want to take a player and print their name like this: "[player] emorgan00". However, you want some specific coloring as well:
 ```
 def say_my_name player:
-    tellraw @a [{"text":"I am the player, and my name is "},{"selector":"player"}]
+    tellraw @a ["[",{"text":"player", "color":"blue"},"] ",{"selector":"player"}]
 ```
 The "player" variable will be detected twice, although the first one is unintentional. The output will end up looking something like this:
-`I am a @e[...some random stuff...], and my name is emorgan00`
-The solution is to use the `#v` clarifier, which tells the compiler to just substitute the variable name instead of a selector:
+`[@e[...some random stuff...]] emorgan00`
+The solution is to use the `#v` clarifier, which tells the compiler to just use the variable name instead of a selector:
 ```
 def say_my_name player:
-    tellraw @a [{"text":"I am the player#v, and my name is "},{"selector":"player"}]
+    tellraw @a ["[",{"text":"player#v", "color":"blue"},"] ",{"selector":"player"}]
 ```
 
 When using clarifiers combined with selectors, the syntax should be as follows:
@@ -405,7 +405,27 @@ def example:
     greet_n_times @r 10
 ```
 
-## Parameters as JSON components
+## Clarifiers in Parameters
+
+If you know in advance that a parameter will always be a player or a single entity, you may find it simpler to use the corresponding clarifier in the function declaration. EasyDatapacks does in fact support this. For example, the two following functions are equivalent:
+```
+def greet1 player:
+    tellraw player#p "Hello!"
+    give player#p bread 1
+
+def greet2 player#p:
+    tellraw player "Hello!"
+    give player bread 1
+```
+
+Please note that the `#p` status of the `player` variable would be overwritten if you were to reassign another entity to the variable. For example, the following would not work:
+```
+def greet player#p:
+    player = @p
+    give player bread 1
+```
+
+## Variables as JSON Text Components
 
 Suppose you want a function which takes a player as input, and then prints that player's name to the chat. Vanilla commands allow you to convert entity names and scores to test as part of a JSON array, which is what we will need to use to make this work. However, unlike a command parameter, entity selectors appear in JSON as text. Thankfully, EasyDatapacks will also parse any JSON inputs in your program and detect variables or parameters, incorporating them accordingly.
 
@@ -422,6 +442,115 @@ The "someplayer" parameter will be detected and the function will print the inpu
 def example:
     someplayer = @r
     tellraw @a [{"text": "Hi, my name is "}, {"selector":"someplayer"}]
+```
+
+## Text Strings
+
+EasyDatapacks has two data types which are used at run-time, but it also has a third data type which is handled only at compile time: Strings.
+
+A string is any piece of raw text which can be inserted into a command at any location. For example, consider the following program:
+```
+def example:
+    my_favorite_food = chicken
+```
+Because `chicken` isn't a number or entity, it's just a piece of raw text stored in the variable `my_favorite_food`. This raw text can be used anywhere in a command, such as in the following:
+```
+def example:
+    my_favorite_food = chicken
+    give @p my_favorite_food 1
+```
+This would give me 1 piece of chicken.
+
+Strings can be parameters as well. To indicate that a parameter is a string, use the `#s` clarifier, like this:
+```
+def give_kindly player#p item_a#s item_b#s:
+
+    give player item_a 1
+    give player item_b 1
+
+    tellraw player ["Here, take this ", "item_a", " and ", "item_b", "!"]
+
+def load:
+
+    give_kindly @p chicken bread
+```
+The above program would give me 1 chicken and 1 bread, and then say `Here, take this chicken and bread!`
+
+## Resolving Type Conflicts
+
+Suppose you have the following program:
+```
+def example:
+    x = 10
+    y = 15
+    z = 20
+    tp @p x y z
+```
+It should be clear that this program isn't going to work, as `x`, `y`, and `z` are all integers, not strings, and you can't teleport a player based on scoreboard scores. In order to resolve this, we will need to let the compiler know that we want to our variables to have the string data type:
+```
+def example:
+    x#s = 10
+    y#s = 15
+    z#s = 20
+    tp @p x y z
+```
+This will work. In general, if something isn't the data type you want it to be, you can place a clarifier on the variable or parameter name to fix it. If no clarifier is supplied, the compiler will "guess" what data type you are using, but that guess can sometimes be wrong, like in the above example.
+
+For those who may be wondering, the following are all also valid:
+```
+def example:
+    player#p1 = @p
+    stand#e = summon armor_stand ~ ~ ~
+    number#i = 15
+    text#s = @e
+```
+
+## Parameter Defaults
+
+Suppose you want to have a function that has an optional argument, called `shout`, which you call in two different ways:
+```
+shout "Hello"
+# prints "Hello!!!!"
+
+shout "Goodbye" blue
+# prints "Goodbye!!!!" in blue
+```
+As you can see, the argument for the color is optional. To create a function like this, we can use parameter defaults. We will have a parameter for our function called `color`, which has a default value of `white` when not provided. Here is what the syntax looks like:
+```
+def shout message#s color#s=white:
+    tellraw @a [{"text":"","color#v":"color"},message,"!!!!"]
+```
+
+## Including Other Files
+
+For larger projects, you may wish to spread your code out across multiple files. You can compile all of these at once by listing them all out when you compile (more on this in the "Compiling" section), but this can be quite tedious if have more than 1 or 2 files. Instead, you can just `include` one file at the top of another file, and only compile the second file. This may sound confusing, so here's a worked example:
+
+Let's say you have two files, called `main.mcf` and `extra.mcf`. The contents of each file is as follows:
+
+main.mcf
+```
+def load:
+    give_food player
+```
+
+extra.mcf
+```
+def give_food player#p:
+    give player chicken 32
+```
+
+Both files are stored side-by-side in the same folder. Right now, if we compile `main.mcf`, it won't work because give_food isn't defined in that file. We can fix this by including `extra.mcf` at the top of `main.mcf`, as follows:
+
+main.mcf
+```
+include extra.mcf
+def load:
+    give_food player
+```
+
+If the file you want to include isn't in the same folder, you can still include it by specifying the relative path to that file, for example:
+```
+include ../path/to/extra.mcf
 ```
 
 ## Comments
@@ -446,7 +575,17 @@ EasyDatapacks uses a compiler written in python. The file which you create will 
 
 Code on GitHub: https://github.com/emorgan00/EasyDatapacks
 
-## Compiling from the Command Line
+## Installing
+
+First things first, you'll need to install EasyDatapacks:
+```sh
+$ pip install --user git+https://github.com/emorgan00/EasyDatapacks
+```
+Once you're done installing, be sure that the location of the datapack.exe executable is within your system PATH variable. If it isn't, there will be a warning somewhere in the output of the command above.
+
+If the installation was successfull, typing `datapack` on the command line should output "A command is required". 
+
+## Compiling
 
 To use the command line interface, run:
 
@@ -465,6 +604,7 @@ Additionally, you can add one of the following flags:
 ```
 -v, --verbose: print out all generated commands.
 -n, --nofiles: don't generate any files.
+-z, --zip: compress the generated datapack into a zipped folder.
 ```
 Use a flag like this:
 
@@ -488,11 +628,6 @@ Every time you update that directory, those updates will also be carried out on 
 
 Here are a few examples of fully working datapacks written with EasyDatapacks:
 
-[hookshot](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/hookshot.mcf)
-(this will implement a Zelda-like hookshot)
+[String Functions](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/strings.mcf): A brief example of the various things you can do with raw text.
 
-[movingblocks](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/movingblocks.mcf)
-(this will implement moving blocks which can be pushed along the grid, and slide on ice)
-
-[locks](https://raw.githubusercontent.com/emorgan00/EasyDatapacks/master/examples/locks.mcf)
-(this will implement iron and gold locks, which can be opened with iron and gold keys)
+[Raytracing](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/simple_raytracer.mcf): A super simple ray tracing program that shows how simple it is in EasyDatapacks.

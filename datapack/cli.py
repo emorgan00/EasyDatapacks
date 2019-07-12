@@ -15,6 +15,9 @@ buildlike_parser.add_argument(
     "-v", "--verbose", action="store_true", help="print out all generated commands."
 )
 buildlike_parser.add_argument(
+    "-z", "--zip", action="store_true", help="zip the output folder."
+)
+buildlike_parser.add_argument(
     "-n",
     "--nofiles",
     action="store_true",
@@ -31,7 +34,9 @@ buildlike_parser.add_argument(
 buildlike_parser.add_argument("files", nargs="+")
 
 build_parser = subparser.add_parser(
-    "build", help="build EasyDatapacks files into a datapack", parents=[buildlike_parser]
+    "build",
+    help="build EasyDatapacks files into a datapack",
+    parents=[buildlike_parser],
 )
 
 link_parser = subparser.add_parser(
@@ -47,8 +52,9 @@ watch_parser = subparser.add_parser(
 )
 
 
-def run(args):
-    args = parser.parse_args(args)
+def run(args=sys.argv):
+    parser.prog = args[0]
+    args = parser.parse_args(args[1:])
 
     if args.cmd == "build":
         _run_build(args)
@@ -95,7 +101,7 @@ def _run_build(args):
     try:
         outdir = args.output[0] if args.output else args.files[0]
         outdir = os.path.realpath(os.path.splitext(outdir)[0])
-        success = compile(outdir, args.files, args.verbose, args.nofiles)
+        success = compile(outdir, args.files, args.verbose, args.nofiles, args.zip)
     except CompilationError as e:
         print(e)
         sys.exit()

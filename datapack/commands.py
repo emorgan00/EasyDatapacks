@@ -10,7 +10,7 @@ def select_entity(tag):
 
 
 def select_player(tag):
-    return '@p[tag=%s]' % tag
+    return '@a[tag=%s]' % tag
 
 
 def select_entity1(tag):
@@ -53,7 +53,9 @@ def text_int(var, namespace):
 
 
 def summon_vars(pack):
-    return 'execute unless entity @e[name=' + pack + '.VARS] run summon armor_stand 0 0 0 {Marker:1b,Invisible:1b,NoGravity:1b,CustomName:"\\"' + pack + '.VARS\\""}'
+    return 'execute unless entity @e[name=' + pack + \
+    '.VARS] run summon area_effect_cloud 0 0 0 {Age:-2147483648,Duration:-1,WaitTime:-2147483648,CustomName:"\\"' + \
+    pack + '.VARS\\""}'
 
 
 def check_int(var, op, val, namespace):

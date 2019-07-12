@@ -19,7 +19,7 @@ LOADTICK = '''{
 }'''
 
 
-def compile(destination, files, verbose=False, nofiles=False):
+def compile(destination, files, verbose=False, nofiles=False, zip=False):
     """files is a list of text files containing your code.
     destination points to the folder where you want your datapack to end up"""
 
@@ -78,5 +78,8 @@ def compile(destination, files, verbose=False, nofiles=False):
     for func in namespace.functions:
         with open(os.path.join(destination, 'data', packname, 'functions', func[5:] + '.mcfunction'), 'w') as f:
             f.write('\n'.join(namespace.functions[func].commands))
+
+    if zip:
+        shutil.make_archive(destination, 'zip', destination)
 
     return True

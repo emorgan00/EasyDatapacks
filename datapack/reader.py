@@ -2,9 +2,25 @@
 def tokenize(line):
     tokens = []
     buff = ''
+    squote, dquote = False, False
 
     for ch in line:
-        if ch in '=,{}[]():"\'+-*<>%\\/':
+        if ch == '"' and not squote:
+            if len(buff) > 0:
+                tokens.append(buff)
+            tokens.append(ch)
+            buff = ''
+            dquote = not dquote
+        elif ch == '\'' and not dquote:
+            if len(buff) > 0:
+                tokens.append(buff)
+            tokens.append(ch)
+            buff = ''
+            squote = not squote
+        elif squote or dquote:
+            buff += ch
+            continue
+        elif ch in '=,{}[]():+-*<>%\\/':
             if len(buff) > 0:
                 tokens.append(buff)
             tokens.append(ch)
@@ -26,19 +42,21 @@ def tokenize(line):
 def broad_tokenize(line):
     tokens = tokenize(line)
 
-    stack, token, depth, quote = [], '', 0, False
+    stack, token, depth, squote, dquote = [], '', 0, False, False
 
     for subtoken in tokens:
         token += subtoken
 
-        if subtoken in '"\'':
-            quote = not quote
+        if subtoken == '"' and not squote:
+            dquote = not dquote
+        if subtoken == '\'' and not dquote:
+            squote = not squote
         elif subtoken in '[{':
             depth += 1
         elif subtoken in ']}':
             depth -= 1
 
-        if depth == 0 and not quote and token[-1] == ' ':
+        if depth == 0 and not squote and not dquote and token[-1] == ' ':
             if len(token.strip()) > 0:
                 stack.append(token.strip())
                 token = ''
@@ -67,6 +85,18 @@ def tab_depth(line, tab_width):
 # returns whether this is a valid name for a funcname or parameter
 def valid_name(expression):
     for c in expression:
-        if c not in 'qwertyuiopasdfghjklzxcvbnm#_':
+        if not (c.isalpha() or c in '#_'):
             return False
     return True
+
+def valid_function(expression):
+    for c in expression:
+        if not (c.isalpha() or c in '_'):
+            return False
+    return True
+
+def valid_int(expression):
+    if len(expression) > 1:
+        return expression[1:].isdigit() and expression[0] in '-0123456789'
+    else:
+        return expression.isdigit()
