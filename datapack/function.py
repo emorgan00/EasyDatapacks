@@ -218,13 +218,9 @@ class Function:
                     default = None
 
                     equals = token.split('=')
+                    print(equals)
                     param = equals[0].split('#')
                     if len(equals) > 1:
-                        try:
-                            if param[1] != 's':
-                                self.raise_exception('Default parameter values are only for strings.')
-                        except:
-                            self.raise_exception('Default parameter values are only for strings.')
                         default = '='.join(equals[1:])
                         hasdefault = True
 
@@ -235,7 +231,7 @@ class Function:
                         continue
                     if valid_name(param[0]):
                         if len(param) == 1:
-                            funcparams[token] = 'e'
+                            funcparams[param[0]] = 'e'
                         elif param[1] in ('e', 'i', 'p', '1', '1p', 'p1', 's'):
                             funcparams[param[0]] = param[1]
                         elif param[1] in ('e1', '1e'):
@@ -510,8 +506,22 @@ class Function:
             funcdata = []
             paramindex = 0
 
+            def add_param(p, expression):
+                if func.params[p] in ('e', 'p', '1', '1p', 'p1'): # expecting an entity
+                    self.add_command(assign_entity(expression, func.name + '.' + p))
+
+                elif func.params[p] == 'i': # expecting an integer
+                    if expression.isdigit():  # constant int
+                        self.add_command(assign_int(expression, func.name + '.' + p, self.namespace))
+                    elif expression[0] == '@':  # reference to int
+                        self.add_command(
+                            augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
+
+                elif func.params[p] == 's': # expecting a string
+                    funcdata.append(self.process_tokens(tokenize(expression)))
+
             for param in givenparams:
-                expression = self.process_expression(param).strip()
+                expression = self.process_tokens(tokenize(param)).strip()
 
                 if paramindex >= len(func.params): # expecting a sub-function
 
@@ -524,26 +534,13 @@ class Function:
                     paramindex = 0
 
                 else:
-
-                    p = paramlist[paramindex]
-                    if func.params[p] in ('e', 'p', '1', '1p', 'p1'): # expecting an entity
-                        self.add_command(assign_entity(expression, func.name + '.' + p))
-
-                    elif func.params[p] == 'i': # expecting an integer
-                        if expression.isdigit():  # constant int
-                            self.add_command(assign_int(expression, func.name + '.' + p, self.namespace))
-                        elif expression[0] == '@':  # reference to int
-                            self.add_command(
-                                augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
-
-                    elif func.params[p] == 's': # expecting a string
-                        funcdata.append(self.process_tokens(tokenize(expression)))
-                    
+                    add_param(paramlist[paramindex], expression)
                     paramindex += 1
 
             while paramindex < len(func.params):
                 if paramlist[paramindex] in func.defaults:
-                    funcdata.append(self.process_tokens(tokenize(func.defaults[paramlist[paramindex]])))
+                    expression = self.process_tokens(tokenize(func.defaults[paramlist[paramindex]]))
+                    add_param(paramlist[paramindex], expression)
                     paramindex += 1
                 else:
                     self.raise_exception('Not enough parameters for function "' + func.name[5:] + '".')
