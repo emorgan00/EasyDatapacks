@@ -218,7 +218,6 @@ class Function:
                     default = None
 
                     equals = token.split('=')
-                    print(equals)
                     param = equals[0].split('#')
                     if len(equals) > 1:
                         default = '='.join(equals[1:])
