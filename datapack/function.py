@@ -12,7 +12,7 @@ class CompilationSyntaxError(CompilationError):
 
 class Function:
 
-    def __init__(self, path, params, defaults, lines, namespace, start, expecteddepth, infunc, inloop, stringdata):
+    def __init__(self, path, refs, params, defaults, lines, namespace, start, expecteddepth, infunc, inloop, stringdata):
 
         # master list of all generated vanilla commands in the function
         self.commands = []
@@ -27,7 +27,7 @@ class Function:
         self.namespace = namespace
         self.functions = namespace.functions
 
-        self.refs = namespace.refs
+        self.refs = refs.copy()
         self.pack = namespace.pack
 
         # the parameters supplied to this function, follows the same format as refs
@@ -197,14 +197,18 @@ class Function:
                 continue
             if p[1].startswith('def'):
 
+                if len(self.defaults) > 0:
+                    self.raise_exception('A function with defaults cannot have any sub-functions.')
+
                 self.pointer = i
                 tokens = tokenize(p[1])
                 if len(tokens) < 2:
                     self.raise_exception('No function name provided.')
-                funcpath = self.path + [tokens[1].strip()]
+
                 if not valid_function(tokens[1].strip()):
                     self.raise_exception('Invalid function name: "' + tokens[1].strip() + '".')
 
+                funcpath = self.path + [tokens[1].strip()]
                 funcparams = {}
                 funcdefaults = {}
                 hasdefault = False
@@ -250,7 +254,7 @@ class Function:
                 if '.'.join(funcpath) in self.functions:
                     self.raise_exception('Duplicate function "' + funcpath[-1] + '"')
 
-                self.functions['.'.join(funcpath)] = Function(funcpath, funcparams, funcdefaults, self.lines, self.namespace,
+                self.functions['.'.join(funcpath)] = Function(funcpath, self.refs, funcparams, funcdefaults, self.lines, self.namespace,
                                                               storepointer + i + 1, depth + 1, funcpath, None, self.stringdata)
 
         self.pointer = storepointer
@@ -500,35 +504,49 @@ class Function:
                     'Attempt at recursing in function ' + '.'.join(self.infunc) + ', this is not supported.')
 
             func = self.functions[funcpath]
+            paramlist = tuple(func.params.keys())
+
             givenparams = broad_tokenize(''.join(tokens[1:]))
-            if len(givenparams) > len(func.params):
-                self.raise_exception('Too many parameters for function "' + tokens[0].strip() + '".')
-
             funcdata = []
+            paramindex = 0
 
-            for i, p in enumerate(func.params):
+            for param in givenparams:
+                expression = self.process_expression(param).strip()
 
-                expression = None
-                try:
-                    expression = self.process_expression(givenparams[i]).strip()
-                except IndexError:
-                    if p in func.defaults:
-                        expression = func.defaults[p]
-                    else:
-                        self.raise_exception('Not enough parameters for function "' + tokens[0].strip() + '".')
+                if paramindex >= len(func.params): # expecting a sub-function
 
-                if func.params[p] in ('e', 'p', '1', '1p', 'p1'):  # an entity
-                    self.add_command(assign_entity(expression, func.name + '.' + p))
+                    funcpath += '.' + param
+                    if not funcpath in self.functions:
+                        self.raise_exception('"' + param + '" is not a valid sub-function of function "' + \
+                                             tokens[0].strip() + '".')
+                    func = self.functions[funcpath]
+                    paramlist = tuple(func.params.keys())
+                    paramindex = 0
 
-                elif func.params[p] == 'i':  # in integer
-                    if expression.isdigit():  # constant int
-                        self.add_command(assign_int(expression, func.name + '.' + p, self.namespace))
-                    elif expression[0] == '@':  # reference to int
-                        self.add_command(
-                            augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
+                else:
 
-                elif func.params[p] == 's':  # a string
-                    funcdata.append(self.process_tokens(tokenize(expression)))
+                    p = paramlist[paramindex]
+                    if func.params[p] in ('e', 'p', '1', '1p', 'p1'): # expecting an entity
+                        self.add_command(assign_entity(expression, func.name + '.' + p))
+
+                    elif func.params[p] == 'i': # expecting an integer
+                        if expression.isdigit():  # constant int
+                            self.add_command(assign_int(expression, func.name + '.' + p, self.namespace))
+                        elif expression[0] == '@':  # reference to int
+                            self.add_command(
+                                augment_int(func.name + '.' + p, self.reference_path(givenparams[i]), '=', self.namespace))
+
+                    elif func.params[p] == 's': # expecting a string
+                        funcdata.append(self.process_tokens(tokenize(expression)))
+                    
+                    paramindex += 1
+
+            while paramindex < len(func.params):
+                if paramlist[paramindex] in func.defaults:
+                    funcdata.append(self.process_tokens(tokenize(func.defaults[paramlist[paramindex]])))
+                    paramindex += 1
+                else:
+                    self.raise_exception('Not enough parameters for function "' + func.name[5:] + '".')
 
             self.add_command(self.call_function(funcpath, *funcdata))
 
@@ -760,7 +778,7 @@ class Function:
         funcname = '.'.join(funcpath)
 
         try:
-            self.functions[funcname] = Function(funcpath, {}, {}, self.lines, self.namespace, newpointer, newdepth,
+            self.functions[funcname] = Function(funcpath, self.refs, {}, {}, self.lines, self.namespace, newpointer, newdepth,
                                                 self.infunc, inloop, self.stringdata)
             # if this is a break-chain, we should carry over the pastline because its the same level of indentation
             if code == 'b':

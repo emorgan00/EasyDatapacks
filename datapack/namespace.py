@@ -15,10 +15,6 @@ class Namespace:
         # an entry follows this format: {Function.name : Function}
         self.functions = {}
 
-        # stores all references in the format {variable-name : type}
-        # type is either 'e' or 'i' (entity or integer)
-        self.refs = {}
-
         # for integer variables
         self.consts = []
         self.ints = set()
@@ -109,7 +105,7 @@ class Namespace:
                 raise CompilationSyntaxError(out)
             lines.append((td, line.strip(), i + 1))
 
-        Function(['main'], {}, {}, lines, self, 0, 0, None, None, {}).compile()
+        Function(['main'], {}, {}, {}, lines, self, 0, 0, None, None, {}).compile()
 
         # post-process
         funcpointer = 0
@@ -142,7 +138,7 @@ class Namespace:
 
             if 'main.load' not in self.functions:
                 print('\nautomatically creating missing load function...')
-                self.functions['main.load'] = Function(['main', 'load'], {}, {}, [], self, 0, 0, ['main', 'load'], None, {})
+                self.functions['main.load'] = Function(['main', 'load'], {}, {}, {}, [], self, 0, 0, ['main', 'load'], None, {})
 
             load = self.functions['main.load']
 
@@ -223,7 +219,7 @@ class Namespace:
         
         data = data.copy()
         data.update(func.stringdata)
-        copy = Function(newpath, params, func.defaults, func.lines, self,
+        copy = Function(newpath, func.refs, params, func.defaults, func.lines, self,
                         func.pointer, func.expecteddepth, func.infunc, func.inloop, data)
 
         copy.compile()
