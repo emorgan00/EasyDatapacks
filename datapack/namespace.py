@@ -120,7 +120,7 @@ class Namespace:
         # prune unused functions
         unused = []
         for f in self.functions:
-            if not self.functions[f].used:
+            if not self.functions[f].used or len(self.functions[f].commands) == 0:
                 unused.append(f)
         for f in unused:
             self.functions.pop(f)

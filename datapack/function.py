@@ -263,13 +263,6 @@ class Function:
                 break
             self.pointer += 1
 
-        # dispel locals
-        for ref in self.locals:
-            if self.refs[ref] in ('e', 'p', '1', '1p', 'p1'):  # an entity
-                self.add_command(clear_tag(ref))
-
-            self.refs.pop(ref)
-
     # called on a single token. Detects references and handles clarifiers. For multi-token strings, use process_tokens.
     def process_expression(self, expression):
 
@@ -505,9 +498,12 @@ class Function:
             funcdata = []
             paramindex = 0
 
-            def add_param(p, expression):
+            entitytags = []
+
+            def add_param(p, expression, entitytags):
                 if func.params[p] in ('e', 'p', '1', '1p', 'p1'): # expecting an entity
                     self.add_command(assign_entity(expression, func.name + '.' + p))
+                    entitytags.append(func.name + '.' + p)
 
                 elif func.params[p] == 'i': # expecting an integer
                     if expression.isdigit():  # constant int
@@ -533,18 +529,20 @@ class Function:
                     paramindex = 0
 
                 else:
-                    add_param(paramlist[paramindex], expression)
+                    add_param(paramlist[paramindex], expression, entitytags)
                     paramindex += 1
 
             while paramindex < len(func.params):
                 if paramlist[paramindex] in func.defaults:
                     expression = self.process_tokens(tokenize(func.defaults[paramlist[paramindex]]))
-                    add_param(paramlist[paramindex], expression)
+                    add_param(paramlist[paramindex], expression, entitytags)
                     paramindex += 1
                 else:
                     self.raise_exception('Not enough parameters for function "' + func.name[5:] + '".')
 
             self.add_command(self.call_function(funcpath, *funcdata))
+            for tag in entitytags:
+                self.add_command(clear_tag(tag))
 
         # implicit execute
         elif tokens[0].strip() in (
