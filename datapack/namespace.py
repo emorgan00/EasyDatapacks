@@ -205,7 +205,7 @@ class Namespace:
                 # if a function is only 1 command, just execute it directly.
                 return line[:start] + self.post_process_line(callfunc.commands[0])
             else:
-                return line
+                return '# ' + line[:start] + 'function ' + self.pack + ':' + callfuncname[5:]
 
         return line
 
