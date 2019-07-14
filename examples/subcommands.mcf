@@ -1,0 +1,50 @@
+def kit player#p
+
+	# the <player> parameter applies to all subcommands of "kit"
+
+	# "food" is a subcommand of "kit".
+	def food num#s
+
+		give player bread num
+
+	def sword
+		
+		give player iron_sword 1
+
+	def armor
+
+		as player
+			give @s minecraft:iron_helmet 1
+			give @s minecraft:iron_chestplate 1
+			give @s minecraft:iron_leggings 1
+			give @s minecraft:iron_boots 1
+
+	def shield
+
+		give player shield 1
+
+	def everything
+
+		# because we are already in the "kit" command,
+		# we can just call these directly.
+
+		sword
+		armor
+		shield
+		food 64
+
+	# if no subcommand is given, it will simply execute the contents of "kit",
+	# which is just this tellraw command.
+	tellraw @a "No subcommand was specified"
+	give player stick 1
+
+def load:
+
+	# gives the player 32 bread
+	kit @p food 32
+
+	# gives the player a full iron set and 64 bread
+	kit @p everything
+
+	# prints out "No subcommand was specified", and gives the player a stick
+	kit @p

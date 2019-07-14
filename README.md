@@ -630,4 +630,6 @@ Here are a few examples of fully working datapacks written with EasyDatapacks:
 
 [String Functions](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/strings.mcf): A brief example of the various things you can do with raw text.
 
-[Raytracing](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/simple_raytracer.mcf): A super simple ray tracing program that shows how simple it is in EasyDatapacks.
+[Raytracing](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/simple_raytracer.mcf): A super simple ray tracing program.
+
+[Subcommands](https://github.com/emorgan00/EasyDatapacks/blob/master/examples/subcommands.mcf): An example of how to use subcommands.
