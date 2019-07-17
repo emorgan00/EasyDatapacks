@@ -521,6 +521,82 @@ def shout message#s color#s=white:
     tellraw @a [{"text":"","color#v":"color"},message,"!!!!"]
 ```
 
+## Subcommands
+
+So far we've only dealt with functions defined at the outermost level. However, it is also possible to define functions within other functions. This is easily the most complicated section, so be sure you understand all the other features of the language before moving on. It is also, though, one of the most powerful tools you have to define commands which work just like the vanilla commands native to the game.
+
+Let's take a simple example of a command we want to make, with three subcommands. The command will be called `kit`, and will have 3 subcommands, `food`, `weapon`, and `both`. The command will also take a player parameter before the subcommand, and the `food` subcommand will take a string parameter containing a number. It will be called in the following ways:
+```
+kit @p weapon
+kit @p food 32
+kit @p both
+```
+Now let's look at how to define this command. At the highest level, the command is called `kit`, and has one player parameter. So let's define it as such:
+```
+def kit player#p:
+    # haven't written this part yet
+```
+Next, we add each of the subcommands, defined _within_ `kit` (order doesn't matter). Let's start with the first two:
+```
+def kit player#p:
+
+    def weapon:
+        give player iron_sword 1
+
+    def food num#s:
+        give player bread num
+
+    # still have to write "both"
+```
+Now, we can run the first two example calls above. All that's left to do is write the `both` command. Since `both` is within `kit`, we don't need to redundantly call `kit` or give a player parameter, we can just call `weapon` and `food` directly:
+```
+def kit player#p:
+
+    def weapon:
+        give player iron_sword 1
+
+    def food num#s:
+        give player bread num
+
+    def both:
+        weapon
+        food 16
+```
+And we are done.
+
+Subcommands can be nested as deep as you want, giving you the opportunity to create vast, complex commands with many different uses.
+Parameter defaults can only be used with the last subcommand in a nested chain.
+
+## Subcommand Default Outer Content
+
+When a subcommand of a command is run, we jump straight into the sub-content without ever running the content of the original command. For example:
+```
+def outer:
+
+    def inner:
+        say "This is the content of inner"
+
+    say "This is the content of outer"
+```
+In the above, if we were to call `outer inner`, only the inner message would be printed. However, if all we typed was `outer`, then only the outer content would be printed. This allows you to create "default" content for if a function is called without any subcommand. Take the example from earlier:
+
+```
+def kit player#p:
+
+    def weapon:
+        give player iron_sword 1
+
+    def food num#s:
+        give player bread num
+
+    def both:
+        weapon
+        food 16
+
+    say "Oops, you forgot to specify a subcommand!"
+```
+If `kit @p` was called, the "oops" message would be printed.
+
 ## Including Other Files
 
 For larger projects, you may wish to spread your code out across multiple files. You can compile all of these at once by listing them all out when you compile (more on this in the "Compiling" section), but this can be quite tedious if have more than 1 or 2 files. Instead, you can just `include` one file at the top of another file, and only compile the second file. This may sound confusing, so here's a worked example:

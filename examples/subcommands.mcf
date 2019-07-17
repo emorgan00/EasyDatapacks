@@ -34,7 +34,7 @@ def kit player#p
 		food 64
 
 	# if no subcommand is given, it will simply execute the contents of "kit",
-	# which is just this tellraw command.
+	# which is just these two lines.
 	tellraw @a "No subcommand was specified"
 	give player stick 1
 
