@@ -480,6 +480,7 @@ class Function:
         elif tokens[0].strip() == 'def':
 
             func = self.functions[self.name + '.' + tokens[1].strip()]
+            func.refs.update(self.refs)
             if not func.instantiable:
                 func.compile()
                 func.used = True
