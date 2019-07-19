@@ -2,7 +2,7 @@
 
 EasyDatapacks is a new programming language for Minecraft. It looks a lot like the vanilla Minecraft commands we all know and love, except for a few big changes.
 
-## All in One File
+# All in One File
 
 Normally, datapacks are separated across many folders and files. Datapack creators need to keep track of many moving parts, such as the pack.mcmeta file, the files used to tag which functions are run at load time and at every tick, and so on. EasyDatapacks removes all of this hassle, and everything is in one file.
 
@@ -627,6 +627,31 @@ def load:
 If the file you want to include isn't in the same folder, you can still include it by specifying the relative path to that file, for example:
 ```
 include ../path/to/extra.mcf
+```
+
+## Copying Files
+
+Some complex datapacks require other files to work other than the bare _.mcfunction_ files. For instance, you might have a function which detects any type of chest, and thus uses a file called _chests.json_ with the following contents:
+```
+{
+    "values":[
+        "minecraft:chest",
+        "minecraft:trapped_chest",
+        "minecraft:ender_chest"
+    ]
+}
+```
+In order for the datapack to work, the file should be located at `data/<datapackname>/tags/blocks/chests.json`. However, before compiling our datapack, that directory doesn't exist yet! One way to solve this would be to compile once, and then move the file to the proper directory, and then compile again. A better option, though, would be to use the `file` command, which simply copies a file from one place to another.
+
+If _chests.json_ was right alongside our source file, we would use it like this:
+```
+file chests.json data/<datapackname>/tags/blocks
+```
+The first parameter is the relative path to the file we want to copy, and the second parameter is the folder we want it to end up in.
+
+If you want to copy all of the files in a directory, you can use the `*` character as follows:
+```
+file path/to/data/* path/to/destination
 ```
 
 ## Comments

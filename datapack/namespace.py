@@ -25,6 +25,9 @@ class Namespace:
         # for displaying at the end when verbose
         self.clonedfunctions = []
 
+        # for copying files after compilation
+        self.copyfiles = {}
+
     def add_constant(self, value):
 
         if value in self.consts:
@@ -53,6 +56,20 @@ class Namespace:
         else:
             print('failed to import "' + path + '".')
 
+    def copy_file(self, path, dest):
+
+        path = os.path.abspath(path)
+        if path.endswith('*'):
+            paths = [os.path.join(path[:-1], f) for f in os.listdir(path[:-1])]
+        else:
+            paths = [path]
+
+        for p in paths:
+            if os.path.isfile(p):
+                self.copyfiles[p] = dest
+            else:
+                print('file "' + p + '" does not exist.')
+
     def compile(self, verbose):
 
         rawlines = []
@@ -63,12 +80,18 @@ class Namespace:
                 name = file.split('/')[-1].split('\\')[-1]
                 base = file.replace(name, '')
 
-                # handle imports
+                # handle include and file statements
                 for line in f.readlines():
                     if line.startswith('include '):
                         newfile = line[8:].strip()
                         path = os.path.join(base, newfile)
                         self.add_file(path)
+                    elif line.startswith('file '):
+                        components = line.split()[1:]
+                        if len(components) == 2:
+                            self.copy_file(os.path.join(base, components[0]), components[1])
+                        else:
+                            print('"file" command takes 2 parameters, incorrect number supplied.')
                     else:
                         rawlines.append(line)
 

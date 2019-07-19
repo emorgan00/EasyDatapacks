@@ -657,11 +657,13 @@ class Function:
         # vanilla command
         elif self.infunc is None:
             self.raise_exception(
-                'Vanilla command outside of a function. This is not allowed, consider putting it inside the load '
-                'function.')
+                'Vanilla command outside of a function. This is not allowed, consider putting it inside the load function.')
         elif tokens[0].strip() == 'function':
             self.raise_exception(
                 'The /function command is no longer used. Just type your function as if it were a command.')
+        elif tokens[0].strip() in ('include', 'file'):
+            self.raise_exception(
+                '"' + tokens[0].strip() + '" statement should not be inside of a function.')
 
         else:
             self.add_command(self.process_tokens(tokens))
