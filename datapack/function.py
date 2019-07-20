@@ -326,9 +326,11 @@ class Function:
         destpath = self.reference_path(tokens[0].strip())
 
         # creating a new assignment
-        if len(tokens) > 1 and tokens[1].strip() == '=':
+        if len(tokens) > 1 and (tokens[1] == '=' or tokens[1] == ' ' and tokens[2] == '='):
 
-            if len(tokens) == 2:
+            equalspos = tokens.index('=')
+
+            if len(tokens) == equalspos+1:
                 self.raise_exception('Expected something after "=".')
 
             destdata = tokens[0].strip().split('#')
@@ -353,8 +355,8 @@ class Function:
                     pass
 
             # evaluate the right side, perform the new assignment
-            expression = self.process_tokens(tokens[2:], True, dest=dest)
-            refpath = self.reference_path((''.join(tokens[2:])).strip())
+            expression = self.process_tokens(tokens[equalspos+1:], True, dest=dest)
+            refpath = self.reference_path((''.join(tokens[equalspos+1:])).strip())
 
             if clarifiers == '':
 
