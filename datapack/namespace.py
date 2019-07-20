@@ -80,6 +80,8 @@ class Namespace:
                 name = file.split('/')[-1].split('\\')[-1]
                 base = file.replace(name, '')
 
+                templines = []
+
                 # handle include and file statements
                 for line in f.readlines():
                     if line.startswith('include '):
@@ -93,7 +95,9 @@ class Namespace:
                         else:
                             print('"file" command takes 2 parameters, incorrect number supplied.')
                     else:
-                        rawlines.append(line)
+                        templines.append(line)
+
+                rawlines = templines + rawlines # a little inefficient, but not a big deal
 
         # auto-detect tab width
         tab_width = 4
