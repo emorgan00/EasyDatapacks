@@ -318,6 +318,7 @@ class Function:
         tokens = tokenize(line)
 
         funcpath = self.function_path(tokens[0].strip())
+        destpath = self.reference_path(tokens[0].strip())
 
         # creating a new assignment
         if len(tokens) > 1 and tokens[1].strip() == '=':
@@ -419,11 +420,29 @@ class Function:
             else:
                 self.raise_exception('Unknown clarifier: "%s"' % clarifiers)
 
+        # augmented assignment (for entities)
+        elif len(tokens) > 2 and tokens[1] in (
+                '+', '-') and tokens[2] == '=' and destpath is not None and self.refs[destpath] in ('e', 'p', '1', '1p', 'p1'):
+
+            expression = self.process_tokens(tokens[3:], True, dest=destpath)
+            if expression[0] != '@':
+                self.raise_exception('"' + expression + '" is not a valid entity.')
+
+            if tokens[1] == '+':
+
+                if expression != '@':
+                    self.add_command(assign_entity(expression, destpath))
+
+            if tokens[1] == '-':
+
+                if expression != '@':
+                    self.add_command(remove_entity(expression, destpath))
+
+
+
         # augmented assignment (for integers)
         elif len(tokens) > 2 and (
                 tokens[1] in ('+', '-', '/', '*', '%') and tokens[2] == '=' or tokens[1].strip() in ('<', '>', '><')):
-
-            var = tokens[0].strip()
 
             if tokens[1] in ('+', '-', '/', '*', '%'):
                 op = tokens[1] + tokens[2]
@@ -443,9 +462,9 @@ class Function:
             if len(tokens) == 2:
                 self.raise_exception('Expected something after "' + op + '"')
 
-            dest = self.reference_path(var)
+            dest = destpath
             if dest is None or self.refs[dest] != 'i':
-                self.raise_exception('Cannot perform augmented assignment on "' + var + '"')
+                self.raise_exception('Cannot perform augmented assignment on "' + tokens[0].strip() + '"')
 
             inref = self.reference_path(expression)
             if inref is None and valid_int(expression):  # int constant

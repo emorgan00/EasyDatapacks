@@ -2,7 +2,7 @@
 
 EasyDatapacks is a new programming language for Minecraft. It looks a lot like the vanilla Minecraft commands we all know and love, except for a few big changes.
 
-# All in One File
+### All in One File
 
 Normally, datapacks are separated across many folders and files. Datapack creators need to keep track of many moving parts, such as the pack.mcmeta file, the files used to tag which functions are run at load time and at every tick, and so on. EasyDatapacks removes all of this hassle, and everything is in one file.
 
@@ -129,6 +129,14 @@ def example:
 This program will take a random player, and store it in the player variable. Now we can do whatever we want with our randomly chosen player, and know that we will be targeting the same player every time.
 
 The scope of a variable works the same way as it does in normal programming languages.
+
+Since entity variables refer to a set of entities (e.g. `players = @a`), it is also possible to add and remove entities to an entity variable as follows:
+```
+players = @a
+players -= @p
+```
+The `players` variable will now hold all players except for `@p`.
+These are called augmented assignments, and work for both `+=` and `-=`.
 
 ### Note:
 

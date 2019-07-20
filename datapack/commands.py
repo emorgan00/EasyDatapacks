@@ -21,6 +21,10 @@ def select_player1(tag):
     return '@p[tag=%s,limit=1]' % tag
 
 
+def remove_entity(query, tag):
+    return 'tag %s remove %s' % (query, tag)
+
+
 def clear_tag(tag):
     return 'tag @e[tag=%s] remove %s' % (tag, tag)
 
