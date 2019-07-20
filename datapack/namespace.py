@@ -70,7 +70,7 @@ class Namespace:
             else:
                 print('file "' + p + '" does not exist.')
 
-    def compile(self, verbose):
+    def compile(self, verbose, hide):
 
         rawlines = []
 
@@ -138,7 +138,7 @@ class Namespace:
             func = tuple(self.functions.values())[funcpointer]
 
             for i, line in enumerate(func.commands):
-                func.commands[i] = self.post_process_line(line)
+                func.commands[i] = self.post_process_line(line, hide)
 
             funcpointer += 1
 
@@ -186,7 +186,7 @@ class Namespace:
             for f in self.functions:
                 print(self.functions[f])
 
-    def post_process_line(self, line):
+    def post_process_line(self, line, hide):
 
         # function call
         index = line.find('!f{')
@@ -223,14 +223,18 @@ class Namespace:
                 callfuncname = self.instantiate_string_function(callfuncname, stringdata)
                 callfunc = self.functions[callfuncname]
 
+            callfuncname = callfuncname[5:]
+            if hide and callfuncname[-1].isdigit():
+                callfuncname = 'accessories/' + callfuncname
+
             if len(callfunc.commands) > 1:
                 callfunc.used = True
-                return line[:start] + 'function ' + self.pack + ':' + callfuncname[5:]
+                return line[:start] + 'function ' + self.pack + ':' + callfuncname
             elif len(callfunc.commands) == 1:
                 # if a function is only 1 command, just execute it directly.
-                return line[:start] + self.post_process_line(callfunc.commands[0])
+                return line[:start] + self.post_process_line(callfunc.commands[0], hide)
             else:
-                return '# ' + line[:start] + 'function ' + self.pack + ':' + callfuncname[5:]
+                return '# ' + line[:start] + 'function ' + self.pack + ':' + callfuncname
 
         return line
 

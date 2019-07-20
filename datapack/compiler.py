@@ -19,14 +19,14 @@ LOADTICK = '''{
 }'''
 
 
-def compile(destination, files, verbose=False, nofiles=False, zip=False):
+def compile(destination, files, verbose=False, nofiles=False, zip=False, hide=False):
     """files is a list of text files containing your code.
     destination points to the folder where you want your datapack to end up"""
 
     packname = destination.split('/')[-1].split('\\')[-1]
 
     namespace = Namespace(packname, files)
-    namespace.compile(verbose)
+    namespace.compile(verbose, hide)
 
     if nofiles:
         return False
@@ -69,9 +69,16 @@ def compile(destination, files, verbose=False, nofiles=False, zip=False):
         pass
 
     create_folder(destination, 'data', packname, 'functions')
+    if hide:
+        create_folder(destination, 'data', packname, 'functions', 'accessories')
         
     for func in namespace.functions:
-        with open(os.path.join(destination, 'data', packname, 'functions', func[5:] + '.mcfunction'), 'w') as f:
+        if hide and func[-1].isdigit():
+            name = os.path.join('accessories', func[5:] + '.mcfunction')
+        else:
+            name = func[5:] + '.mcfunction'
+
+        with open(os.path.join(destination, 'data', packname, 'functions', name), 'w') as f:
             f.write('\n'.join(namespace.functions[func].commands))
 
     # file copies
