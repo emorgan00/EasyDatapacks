@@ -128,7 +128,9 @@ class Namespace:
                 raise CompilationSyntaxError(out)
             lines.append((td, line.strip(), i + 1))
 
-        Function(['main'], {}, {}, {}, lines, self, 0, 0, None, None, {}).compile()
+        main = Function(['main'], {}, {}, {}, lines, self, 0, 0, None, None, {})
+        main.compiledefs()
+        main.compile()
 
         # post-process
         funcpointer = 0

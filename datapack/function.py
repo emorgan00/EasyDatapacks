@@ -167,7 +167,8 @@ class Function:
             self.raise_exception(out)
         self.auxcommands.append(command)
 
-    def compile(self):
+    # compile only the function headers
+    def compiledefs(self):
 
         if len(self.lines) <= self.pointer:
             self.raise_exception('Expected content, nothing found.', True)
@@ -175,17 +176,6 @@ class Function:
         depth = self.lines[self.pointer][0]
         if depth != self.expecteddepth:
             self.raise_exception('Incorrect indentation.', True)
-
-        # pre-process params into local variables
-        for p in self.params:
-            self.refs['.'.join(self.infunc) + '.' + p] = self.params[p]
-            self.locals.append('.'.join(self.infunc) + '.' + p)
-
-        # pre-process stringdata into local variables
-        for p in self.stringdata:
-            if p not in self.refs:
-                self.refs[p] = 's'
-                self.locals.append(p)
 
         storepointer = self.pointer
 
@@ -251,15 +241,30 @@ class Function:
 
                 self.functions['.'.join(funcpath)] = Function(funcpath, self.refs, funcparams, funcdefaults, self.lines, self.namespace,
                                                               storepointer + i + 1, depth + 1, funcpath, None, self.stringdata)
+                self.functions['.'.join(funcpath)].compiledefs()
 
         self.pointer = storepointer
+
+
+    def compile(self):
+
+        # pre-process params into local variables
+        for p in self.params:
+            self.refs['.'.join(self.infunc) + '.' + p] = self.params[p]
+            self.locals.append('.'.join(self.infunc) + '.' + p)
+
+        # pre-process stringdata into local variables
+        for p in self.stringdata:
+            if p not in self.refs:
+                self.refs[p] = 's'
+                self.locals.append(p)
 
         # process lines
         while self.pointer < len(self.lines):
 
-            if self.lines[self.pointer][0] == depth:
+            if self.lines[self.pointer][0] == self.expecteddepth:
                 self.process_line()
-            elif self.lines[self.pointer][0] < depth:
+            elif self.lines[self.pointer][0] < self.expecteddepth:
                 break
             self.pointer += 1
 
