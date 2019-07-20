@@ -251,7 +251,6 @@ class Function:
         # pre-process params into local variables
         for p in self.params:
             self.refs['.'.join(self.infunc) + '.' + p] = self.params[p]
-            self.locals.append('.'.join(self.infunc) + '.' + p)
 
         # pre-process stringdata into local variables
         for p in self.stringdata:
@@ -267,6 +266,11 @@ class Function:
             elif self.lines[self.pointer][0] < self.expecteddepth:
                 break
             self.pointer += 1
+
+        # dispel local entities
+        for ref in self.locals:
+            if self.refs[ref] in ('e', 'p', '1', '1p', 'p1'):  # an entity
+                self.add_command(clear_tag(ref))
 
     # called on a single token. Detects references and handles clarifiers. For multi-token strings, use process_tokens.
     def process_expression(self, expression):
