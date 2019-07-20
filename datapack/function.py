@@ -716,9 +716,9 @@ class Function:
 
         # special case: conditional
         if conditional and len(args) > 2:
-            for i in range(1, len(args) - 1):
+            for i in range(2, len(args) - 1):
                 op = args[i]
-                if op in ('<', '>', '==', '<=', '>='):
+                if op in ('<', '>', '==', '<=', '>=') and args[i - 2].strip() in ('if', 'unless', 'while', 'whilenot'):
                     refleft = self.reference_path(args[i - 1])
                     refright = self.reference_path(args[i + 1])
                     varleft, varright = None, None
@@ -738,9 +738,6 @@ class Function:
                         varright = args[i + 1]
                     else:
                         self.raise_exception('"' + args[i + 1] + '" is not a valid integer variable or constant.')
-
-                    if i > 1 and not args[i - 2] in ('if', 'unless', 'while', 'whilenot'):
-                        self.raise_exception('Integer comparison without a conditional.')
 
                     if varleft.isdigit() and varright.isdigit():
                         self.raise_exception('Cannot compare two constants.')
