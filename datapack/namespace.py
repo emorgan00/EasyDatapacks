@@ -83,7 +83,7 @@ class Namespace:
                 templines = []
 
                 # handle include and file statements
-                for line in f.readlines():
+                for i, line in enumerate(f.readlines()):
                     if line.startswith('include '):
                         newfile = line[8:].strip()
                         path = os.path.join(base, newfile)
@@ -95,7 +95,7 @@ class Namespace:
                         else:
                             print('"file" command takes 2 parameters, incorrect number supplied.')
                     else:
-                        templines.append(line)
+                        templines.append((i, line))
 
                 rawlines = templines + rawlines # a little inefficient, but not a big deal
 
@@ -114,7 +114,7 @@ class Namespace:
 
         # pre-processing empty lines and comments
         lines = []
-        for i, line in enumerate(rawlines):
+        for i, line in rawlines:
 
             td = tab_depth(line, tab_width)
             tokens = broad_tokenize(line)

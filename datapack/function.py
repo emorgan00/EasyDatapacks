@@ -722,7 +722,6 @@ class Function:
         if conditional and len(args) > 2:
             for i in range(1, len(args) - 1):
                 op = args[i]
-                if op in ('<', '>', '==', '<=', '>='): print(args)
                 if op in ('<', '>', '==', '<=', '>=') and (i == 1 or args[i - 2].strip() in ('if', 'unless')):
                     refleft = self.reference_path(args[i - 1])
                     refright = self.reference_path(args[i + 1])
