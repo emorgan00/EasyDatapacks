@@ -709,7 +709,7 @@ class Function:
 
         # special case: assigning as a summon
         if augsummon and args[0] == 'summon':
-            ref = ' '.join(args)
+            ref = self.process_tokens(tokens)
             if 'Tags:[' in ref:
                 self.add_command(ref.replace('Tags:[', 'Tags:["' + dest + '",'))
             elif ref[-1] == '}':
