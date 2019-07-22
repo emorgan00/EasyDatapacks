@@ -255,6 +255,7 @@ class Namespace:
         copy = Function(newpath, func.refs, params, func.defaults, func.lines, self,
                         func.pointer, func.expecteddepth, func.infunc, func.inloop, data)
 
+        copy.compiledefs()
         copy.compile()
         self.functions[copy.name] = copy
 
