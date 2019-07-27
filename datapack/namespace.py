@@ -228,8 +228,8 @@ class Namespace:
                 callfunc = self.functions[callfuncname]
 
             callfuncname = callfuncname[5:]
-            if hide and callfuncname[-1].isdigit():
-                callfuncname = 'accessories/' + callfuncname
+            if hide and callfunc.path != callfunc.infunc:
+                callfuncname = '.'.join(callfunc.infunc)[5:] + '/' + callfuncname
 
             if len(callfunc.commands) > 1:
                 callfunc.used = True

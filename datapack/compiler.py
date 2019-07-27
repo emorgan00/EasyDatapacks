@@ -69,17 +69,17 @@ def compile(destination, files, verbose=False, nofiles=False, zip=False, hide=Fa
         pass
 
     create_folder(destination, 'data', packname, 'functions')
-    if hide:
-        create_folder(destination, 'data', packname, 'functions', 'accessories')
         
-    for func in namespace.functions:
-        if hide and func[-1].isdigit():
-            name = os.path.join('accessories', func[5:] + '.mcfunction')
+    for funcname in namespace.functions:
+        func = namespace.functions[funcname]
+        if hide and func.path != func.infunc:
+            create_folder(destination, 'data', packname, 'functions', '.'.join(func.infunc)[5:])
+            name = os.path.join('.'.join(func.infunc)[5:], funcname[5:] + '.mcfunction')
         else:
-            name = func[5:] + '.mcfunction'
+            name = funcname[5:] + '.mcfunction'
 
         with open(os.path.join(destination, 'data', packname, 'functions', name), 'w') as f:
-            f.write('\n'.join(namespace.functions[func].commands))
+            f.write('\n'.join(func.commands))
 
     # file copies
     for source in namespace.copyfiles:
