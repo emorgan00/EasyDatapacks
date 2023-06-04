@@ -1,3 +1,5 @@
+[UPDATE 2023](https://github.com/emorgan00/EasyDatapacks/issues/12#issuecomment-1575594336)
+
 ## Overview
 
 EasyDatapacks is a new programming language for Minecraft. It looks a lot like the vanilla Minecraft commands we all know and love, except for a few big changes.
